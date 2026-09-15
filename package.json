@@ -1,0 +1,40 @@
+{
+  "name": "stok-takip-programi",
+  "version": "1.0.0",
+  "description": "Stok Takip Programi - urun ve tedarikci stok takip uygulamasi",
+  "main": "main.js",
+  "author": "Stok Takip Programi",
+  "scripts": {
+    "start": "electron .",
+    "build": "electron-builder --win",
+    "package": "electron-packager . \"Stok Takip Programi\" --platform=win32 --arch=x64 --icon=icon.ico --out=dist-packager --overwrite --asar --ignore=\"^/lisans-uret\\.js$\" --ignore=\"^/NASIL_EXE_YAPILIR\\.md$\" --ignore=\"^/\\.github\""
+  },
+  "license": "MIT",
+  "dependencies": {
+    "nodemailer": "^6.9.14"
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3",
+    "electron-packager": "^17.1.2"
+  },
+  "build": {
+    "appId": "com.esnaf.stoktakip",
+    "productName": "Stok Takip Programı",
+    "files": [
+      "main.js",
+      "preload.js",
+      "index.html",
+      "icon.png",
+      "icon.ico"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

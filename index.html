@@ -1,0 +1,2930 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stok Takip Programı</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0E1420;
+    --sidebar:#141B29;
+    --sidebar-rgb:20,27,41;
+    --sidebar-border:#212B3D;
+    --border-rgb:40,51,74;
+    --surface:#182135;
+    --surface-hover:#1E2941;
+    --border:#28334A;
+    --text:#E8EDF5;
+    --text-soft:#9DAAC2;
+    --text-faint:#7482A0;
+    --accent:#4FA8E8;
+    --accent-ink:#031D33;
+    --accent-soft:rgba(79,168,232,0.16);
+    --red:#F0876A;
+    --red-soft:rgba(240,135,106,0.15);
+    --green:#7FC77F;
+    --green-soft:rgba(127,199,127,0.15);
+    --amber:#E8C15A;
+    --amber-soft:rgba(232,193,90,0.15);
+  }
+  html[data-theme="light"]{
+    --bg:#F3F7FC;
+    --sidebar:#E7EFF9;
+    --sidebar-rgb:231,239,249;
+    --sidebar-border:#D3E0F0;
+    --border-rgb:216,227,242;
+    --surface:#FFFFFF;
+    --surface-hover:#EEF4FB;
+    --border:#D8E3F2;
+    --text:#101826;
+    --text-soft:#48566E;
+    --text-faint:#78859C;
+    --accent:#1D74C4;
+    --accent-ink:#F5FAFF;
+    --accent-soft:rgba(29,116,196,0.12);
+    --red:#C6432B;
+    --red-soft:rgba(198,67,43,0.12);
+    --green:#2E7D32;
+    --green-soft:rgba(46,125,50,0.12);
+    --amber:#A5751A;
+    --amber-soft:rgba(165,117,26,0.12);
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; height:100%; overflow:hidden; }
+  body{
+    font-family:'Inter',sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    height:100vh;
+    display:flex;
+    flex-direction:column;
+  }
+  button, input, select{ font-family:'Inter',sans-serif; }
+
+  /* ---------- TITLE BAR ---------- */
+  #titlebar{
+    height:38px; flex-shrink:0; background:var(--sidebar);
+    border-bottom:1px solid var(--sidebar-border);
+    display:flex; align-items:center; justify-content:space-between;
+    -webkit-app-region:drag; user-select:none;
+  }
+  #titlebar-left{ display:flex; align-items:center; gap:8px; padding-left:12px; }
+  .logo-mark{
+    width:18px; height:18px; border-radius:5px; background:var(--accent); color:var(--accent-ink);
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:11px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  #titlebar-title{ font-family:'Space Grotesk', sans-serif; font-size:12.5px; font-weight:500; color:var(--text-soft); }
+  #titlebar-controls{ display:flex; align-items:center; height:100%; -webkit-app-region:no-drag; }
+  .tb-divider{ width:1px; height:16px; background:var(--border); margin:0 4px; }
+  .tb-btn{
+    width:42px; height:100%; background:none; border:none; color:var(--text-soft); font-size:13px;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+  }
+  .tb-btn:hover{ background:var(--surface-hover); color:var(--text); }
+  .tb-btn.tb-close:hover{ background:#B91C1C; color:#fff; }
+  #tbLogout{ color:var(--accent); }
+  #tbLogout:hover{ background:var(--accent); color:var(--accent-ink); }
+
+  #mainArea{ position:relative; flex:1; min-height:0; display:flex; }
+  #app{ display:flex; flex:1; min-height:0; }
+
+  /* ---------- SIDEBAR ---------- */
+  #cover{
+    width:280px; flex-shrink:0; background:var(--sidebar); border-right:1px solid var(--sidebar-border);
+    padding:20px 16px 92px; overflow-y:auto; display:flex; flex-direction:column;
+  }
+  /* ---------- ALT GÖREV ÇUBUĞU (ortalanmış, yüzen, yarı saydam) ---------- */
+  #bottomBar{
+    position:absolute; left:50%; bottom:16px; transform:translateX(-50%);
+    display:flex; align-items:center; gap:4px; padding:8px 12px;
+    background:rgba(var(--sidebar-rgb), 0.68);
+    backdrop-filter:blur(16px) saturate(1.4);
+    -webkit-backdrop-filter:blur(16px) saturate(1.4);
+    border:1px solid rgba(var(--border-rgb), 0.55);
+    border-radius:18px;
+    box-shadow:0 12px 36px rgba(0,0,0,0.35);
+    z-index:30;
+    max-width:calc(100% - 32px);
+    overflow-x:auto;
+  }
+  .taskbar-btn{
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px;
+    flex-shrink:0; min-width:70px; height:46px; padding:0 10px;
+    background:none; border:none; border-radius:11px; cursor:pointer;
+    color:var(--text-soft); font-family:'Inter',sans-serif;
+  }
+  .taskbar-btn:hover{ background:rgba(255,255,255,0.08); color:var(--text); }
+  .taskbar-btn .tbb-icon{ font-size:16px; line-height:1; }
+  .taskbar-btn .tbb-label{ font-size:9.5px; white-space:nowrap; letter-spacing:0.1px; }
+  .taskbar-btn.taskbar-primary{ background:var(--accent-soft); color:var(--accent); }
+  .taskbar-btn.taskbar-primary:hover{ background:var(--accent); color:var(--accent-ink); }
+  .taskbar-divider{ width:1px; height:28px; background:rgba(var(--border-rgb),0.8); flex-shrink:0; margin:0 4px; }
+  .brand-row{ display:flex; align-items:center; gap:9px; margin-bottom:20px; }
+  .brand-mark{
+    width:30px; height:30px; border-radius:8px; background:var(--accent); color:var(--accent-ink);
+    font-family:'Space Grotesk',sans-serif; font-weight:700; font-size:14px;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .brand-name{ font-family:'Space Grotesk', sans-serif; font-weight:600; font-size:14.5px; color:var(--text); line-height:1.25; }
+
+  .stats-row{ display:flex; gap:8px; margin-bottom:12px; }
+  .stat-chip{ flex:1; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:8px 6px; text-align:center; }
+  .stat-chip span{ display:block; font-family:'JetBrains Mono', monospace; font-size:16px; font-weight:700; color:var(--text); }
+  .stat-chip label{ font-size:9.5px; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-faint); }
+  .stat-chip.stat-danger span{ color:var(--red); }
+
+  .total-card{ background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:14px 16px; margin-bottom:16px; }
+  .total-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-faint); margin-bottom:5px; }
+  .total-value{ font-family:'JetBrains Mono', monospace; font-size:19px; font-weight:600; color:var(--text); }
+  .seg-btn{ flex:1; padding:7px 6px; border-radius:8px; border:1px solid var(--border); background:var(--bg); color:var(--text-soft); font-size:12px; cursor:pointer; }
+  .seg-btn.active{ background:var(--accent-soft); border-color:var(--accent); color:var(--text); font-weight:600; }
+  #barcodeInput, #barcodeQty{ width:100%; padding:8px 10px; border-radius:8px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:12.5px; font-family:'JetBrains Mono', monospace; margin-bottom:6px; }
+  #barcodeInput{ font-family:'Inter',sans-serif; }
+  #barcodeInput:focus, #barcodeQty:focus{ outline:none; border-color:var(--accent); }
+
+  #reminders{ margin-bottom:16px; }
+  #reminders.hidden{ display:none; }
+  .reminders-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-faint); margin-bottom:7px; }
+  .reminder-item{
+    display:flex; justify-content:space-between; align-items:center; gap:8px; padding:8px 10px; border-radius:9px;
+    background:var(--surface); border-left:2px solid var(--red); background:var(--red-soft);
+    margin-bottom:5px; cursor:pointer; font-size:12px;
+  }
+  .reminder-item:hover{ filter:brightness(1.1); }
+  .reminder-name{ color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .reminder-qty{ font-family:'JetBrains Mono', monospace; font-size:11px; color:var(--red); flex-shrink:0; }
+
+  #search{ width:100%; padding:9px 11px; border-radius:9px; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:13px; margin-bottom:8px; }
+  #search::placeholder{ color:var(--text-faint); }
+  #search:focus{ outline:none; border-color:var(--accent); }
+  #sortMode{ width:100%; padding:8px 10px; border-radius:9px; border:1px solid var(--border); background:var(--surface); color:var(--text-soft); font-size:12px; margin-bottom:10px; cursor:pointer; }
+  #sortMode:focus{ outline:none; border-color:var(--accent); }
+
+  #productList{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:2px; }
+  .prod-row{ display:flex; align-items:center; gap:10px; padding:8px; border-radius:9px; cursor:pointer; border-left:2px solid transparent; }
+  .prod-row:hover{ background:var(--surface-hover); }
+  .prod-row.active{ background:var(--surface); border-left:2px solid var(--accent); }
+  .prod-row.critical-row{ background:var(--red-soft); border-left:2px solid var(--red); }
+  .prod-row.critical-row:hover{ filter:brightness(1.08); }
+  .prod-row.critical-row.active{ background:var(--red-soft); border-left:2px solid var(--red); }
+  .prod-row.critical-row .prod-name{ color:var(--red); font-weight:600; }
+  .prod-tab{ width:28px; height:28px; border-radius:8px; font-family:'Space Grotesk',sans-serif; font-weight:600; font-size:12.5px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .prod-info{ flex:1; min-width:0; }
+  .prod-name{ font-size:13px; color:var(--text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .prod-stock{ font-family:'JetBrains Mono', monospace; font-size:11.5px; color:var(--text-faint); }
+  .prod-stock.critical{ color:var(--red); }
+  .empty-list{ color:var(--text-faint); font-size:12.5px; padding:14px 4px; font-style:italic; }
+
+  /* ---------- MAIN CONTENT ---------- */
+  #paper{ flex:1; min-width:0; overflow-y:auto; background:var(--bg); padding:36px 44px 92px; }
+  .empty-state{ text-align:center; padding:130px 20px; color:var(--text-faint); }
+  .empty-state svg{ opacity:0.5; margin:0 auto 12px; display:block; }
+  .empty-state p{ font-family:'Space Grotesk', sans-serif; font-size:15px; margin:0; color:var(--text-soft); }
+
+  #prodHead{ display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:22px; }
+  .prod-header-name{ font-family:'Space Grotesk', sans-serif; font-size:26px; font-weight:600; margin:0 0 4px; color:var(--text); }
+  .prod-header-sub{ font-size:13px; color:var(--text-faint); margin:0 0 8px; }
+  .icon-btn{ background:none; border:none; cursor:pointer; color:var(--text-soft); font-size:13px; padding:0; display:flex; align-items:center; }
+  .icon-btn:hover{ color:var(--accent); }
+  .prod-delete{ font-size:12px; color:var(--text-faint); background:none; border:none; cursor:pointer; padding:0; }
+  .prod-delete:hover{ color:var(--red); }
+
+  .stock-box{ display:flex; flex-direction:column; align-items:flex-end; gap:8px; }
+  .stock-label{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.6px; color:var(--text-faint); }
+  .stock-value{ font-family:'JetBrains Mono', monospace; font-size:30px; font-weight:600; color:var(--green); }
+  .stock-value.critical{ color:var(--red); }
+  .stock-badge{ font-family:'Inter',sans-serif; font-weight:600; font-size:10.5px; letter-spacing:0.5px; text-transform:uppercase; background:var(--red-soft); color:var(--red); padding:4px 10px; border-radius:999px; }
+
+  .margin-row{ display:flex; gap:20px; margin-bottom:22px; flex-wrap:wrap; }
+  .margin-chip{ background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:10px 14px; }
+  .margin-chip label{ display:block; font-size:10px; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-faint); margin-bottom:3px; }
+  .margin-chip span{ font-family:'JetBrains Mono', monospace; font-size:14.5px; font-weight:600; color:var(--text); }
+  .margin-chip.margin-profit span{ color:var(--green); }
+
+  .action-row{ display:flex; gap:10px; margin-bottom:22px; }
+  .action-btn{ font-weight:600; font-size:13px; padding:9px 16px; border-radius:9px; cursor:pointer; border:1px solid transparent; display:inline-flex; align-items:center; gap:6px; }
+  .btn-in{ background:var(--green-soft); color:var(--green); }
+  .btn-in:hover{ background:var(--green); color:var(--bg); }
+  .btn-out{ background:var(--red-soft); color:var(--red); }
+  .btn-out:hover{ background:var(--red); color:var(--bg); }
+
+  #movForm{ display:none; margin-bottom:22px; background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:16px; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+  #movForm.show{ display:flex; }
+  .field{ display:flex; flex-direction:column; gap:5px; }
+  .field label{ font-size:10.5px; color:var(--text-faint); text-transform:uppercase; letter-spacing:0.4px; }
+  .field input, .field select{ font-family:'JetBrains Mono', monospace; font-size:13px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); }
+  .field select{ font-family:'Inter',sans-serif; }
+  .field input#movNote{ font-family:'Inter',sans-serif; min-width:160px; }
+  .field input:focus, .field select:focus{ outline:none; border-color:var(--accent); }
+  #movSubmit{ font-weight:600; font-size:13px; padding:9px 16px; border-radius:8px; border:none; background:var(--accent); color:var(--accent-ink); cursor:pointer; }
+  #movCancel{ font-size:13px; padding:9px 10px; border-radius:8px; border:none; background:none; color:var(--text-faint); cursor:pointer; }
+  #movCancel:hover{ color:var(--text); }
+
+  table#movTable{ width:100%; border-collapse:collapse; }
+  table#movTable th{ text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:0.5px; color:var(--text-faint); padding:0 10px 10px; border-bottom:1px solid var(--border); }
+  table#movTable td{ padding:10px; font-size:13px; vertical-align:top; border-bottom:1px solid var(--border); color:var(--text-soft); }
+  table#movTable tr:last-child td{ border-bottom:none; }
+  table#movTable tr:hover td{ background:var(--surface); }
+  table#movTable td.num, table#movTable th.num{ font-family:'JetBrains Mono', monospace; text-align:right; white-space:nowrap; }
+  .mov-in{ color:var(--green); }
+  .mov-out{ color:var(--red); }
+  .mov-desc{ color:var(--text-faint); font-size:12.5px; }
+  .mov-type-badge{ font-size:10px; font-weight:700; text-transform:uppercase; padding:2px 7px; border-radius:999px; letter-spacing:0.3px; }
+  .mov-type-badge.in{ background:var(--green-soft); color:var(--green); }
+  .mov-type-badge.out{ background:var(--red-soft); color:var(--red); }
+  .mov-edit, .mov-del{ background:none; border:none; cursor:pointer; color:var(--text-soft); opacity:0.85; padding:0 0 0 6px; display:inline-flex; align-items:center; }
+  .mov-edit:hover{ opacity:1; color:var(--accent); }
+  .mov-del:hover{ opacity:1; color:var(--red); }
+  .no-mov{ color:var(--text-faint); font-style:italic; font-size:13px; padding:16px 10px; }
+
+  /* ---------- MODALS ---------- */
+  #modalOverlay, #settingsOverlay, #editProdOverlay, #supplierListOverlay, #editSupplierOverlay, #destinationListOverlay, #editDestinationOverlay, #reportsOverlay, #barcodeOverlay{
+    display:none; position:fixed; inset:0; background:rgba(5,7,10,0.6); backdrop-filter:blur(3px);
+    align-items:center; justify-content:center; z-index:50;
+  }
+  #modalOverlay.show, #settingsOverlay.show, #editProdOverlay.show, #supplierListOverlay.show, #editSupplierOverlay.show, #destinationListOverlay.show, #editDestinationOverlay.show, #reportsOverlay.show, #barcodeOverlay.show{ display:flex; }
+  #confirmOverlay{
+    display:none; position:fixed; inset:0; background:rgba(5,7,10,0.65); backdrop-filter:blur(3px);
+    align-items:center; justify-content:center; z-index:55;
+  }
+  #confirmOverlay.show{ display:flex; }
+  .modal-box{ background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:24px; width:340px; box-shadow:0 20px 50px rgba(0,0,0,0.5); }
+  .modal-box h3{ font-family:'Space Grotesk', sans-serif; margin:0 0 16px; font-size:17px; color:var(--text); }
+  .modal-box .field{ margin-bottom:12px; width:100%; }
+  .modal-box .field label{ display:block; margin-bottom:5px; }
+  .modal-box input, .modal-box select{ width:100%; font-size:13px; padding:9px 11px; border:1px solid var(--border); border-radius:8px; background:var(--bg); color:var(--text); }
+  .modal-box select{ font-family:'Inter',sans-serif; }
+  .modal-box input:focus, .modal-box select:focus{ outline:none; border-color:var(--accent); }
+  .modal-actions{ display:flex; justify-content:flex-end; gap:8px; margin-top:16px; }
+  .modal-cancel{ background:none; border:none; color:var(--text-faint); cursor:pointer; font-size:13px; padding:9px 6px; }
+  .modal-cancel:hover{ color:var(--text); }
+  .modal-save{ background:var(--accent); color:var(--accent-ink); border:none; padding:9px 16px; border-radius:8px; font-weight:600; cursor:pointer; font-size:13px; }
+
+  #settingsOverlay{ padding:24px; }
+  .settings-modal-box{ width:min(760px, 92vw); max-height:92vh; overflow-y:auto; }
+  .settings-cols{ display:grid; grid-template-columns: 1fr 1fr; gap:0 32px; }
+  .settings-col{ min-width:0; }
+  @media (max-width: 720px){ .settings-cols{ grid-template-columns: 1fr; } }
+
+  .theme-switch{ display:flex; gap:8px; margin-bottom:8px; }
+  .theme-opt{ flex:1; display:flex; align-items:center; justify-content:center; gap:6px; padding:9px 8px; border-radius:9px; border:1px solid var(--border); background:var(--bg); cursor:pointer; font-size:12.5px; color:var(--text-soft); }
+  .theme-opt input{ display:none; }
+  .theme-opt:has(input:checked){ border-color:var(--accent); background:var(--accent-soft); color:var(--text); font-weight:600; }
+
+  .toggle-row{ display:flex; align-items:center; gap:9px; margin-bottom:14px; }
+  .toggle-row input{ width:auto; accent-color:var(--accent); }
+  .toggle-row label{ font-size:12.5px; color:var(--text); }
+  hr.sep{ border:none; border-top:1px solid var(--border); margin:12px 0 16px; }
+
+  .backup-row{ display:flex; gap:8px; margin-bottom:14px; }
+  .backup-btn{ flex:1; padding:9px 10px; border-radius:9px; border:1px solid var(--border); background:var(--bg); color:var(--text-soft); font-size:12.5px; cursor:pointer; }
+  .backup-btn:hover{ background:var(--surface-hover); color:var(--text); }
+
+  .pw-wrap, .date-wrap{ position:relative; }
+  .pw-wrap input{ padding-right:36px !important; }
+  .date-wrap input[type="text"]{ padding-right:34px !important; }
+  .pw-toggle, .date-pick-btn{ position:absolute; right:6px; top:50%; transform:translateY(-50%); background:none; border:none; cursor:pointer; font-size:14px; color:var(--text-faint); padding:4px; line-height:1; }
+  .pw-toggle:hover, .date-pick-btn:hover{ color:var(--text); }
+  .native-date-hidden{ position:absolute; right:0; top:0; width:30px; height:100%; opacity:0; pointer-events:none; border:0; padding:0; margin:0; background:var(--surface); color:var(--text); z-index:2; }
+  .native-date-hidden.native-date-active{ opacity:1; pointer-events:auto; }
+
+  /* ---------- AUTH OVERLAY ---------- */
+  #authOverlay{ display:none; position:absolute; inset:0; z-index:60; background:var(--bg); align-items:center; justify-content:center; }
+  #authOverlay.show{ display:flex; }
+  #authCard{ width:320px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px 26px; box-shadow:0 20px 50px rgba(0,0,0,0.5); }
+  #authCard .brand-row{ justify-content:center; margin-bottom:18px; }
+  #authTitle{ font-family:'Space Grotesk', sans-serif; font-size:19px; font-weight:600; color:var(--text); text-align:center; margin:0 0 6px; }
+  #authSub{ font-size:12.5px; color:var(--text-faint); text-align:center; margin:0 0 20px; line-height:1.5; }
+  #authForm .field{ margin-bottom:12px; }
+  #authForm label{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-faint); margin-bottom:5px; display:block; }
+  #authForm input{ width:100%; font-size:13.5px; padding:10px 12px; border:1px solid var(--border); border-radius:9px; background:var(--bg); color:var(--text); }
+  #authForm input:focus{ outline:none; border-color:var(--accent); }
+  #authError{ font-size:12px; color:var(--red); min-height:16px; margin-bottom:6px; }
+  #authSubmitBtn{ width:100%; padding:11px; border-radius:9px; border:none; background:var(--accent); color:var(--accent-ink); font-weight:600; font-size:13.5px; cursor:pointer; margin-top:4px; }
+  #authSubmitBtn:hover{ filter:brightness(1.08); }
+  #authToggleText{ text-align:center; font-size:12.5px; color:var(--text-faint); margin-top:16px; }
+  #authToggleText a{ color:var(--accent); text-decoration:none; cursor:pointer; }
+  #authToggleText a:hover{ text-decoration:underline; }
+
+  /* ---------- LICENSE GATE ---------- */
+  #licenseOverlay{ display:none; position:absolute; inset:0; z-index:70; background:var(--bg); align-items:center; justify-content:center; }
+  #licenseOverlay.show{ display:flex; }
+  #licenseCard{ width:340px; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:28px 26px; box-shadow:0 20px 50px rgba(0,0,0,0.5); }
+  #licenseCard .brand-row{ justify-content:center; margin-bottom:18px; }
+  #licenseTitle{ font-family:'Space Grotesk', sans-serif; font-size:19px; font-weight:600; color:var(--text); text-align:center; margin:0 0 6px; }
+  #licenseSub{ font-size:12.5px; color:var(--text-faint); text-align:center; margin:0 0 20px; line-height:1.5; }
+  #licenseForm .field{ margin-bottom:12px; }
+  #licenseForm label{ font-size:10.5px; text-transform:uppercase; letter-spacing:0.4px; color:var(--text-faint); margin-bottom:5px; display:block; }
+  #licenseForm input{ width:100%; font-size:14px; padding:10px 12px; text-align:center; letter-spacing:1px; font-family:'JetBrains Mono', monospace; text-transform:uppercase; border:1px solid var(--border); border-radius:9px; background:var(--bg); color:var(--text); }
+  #licenseForm input:focus{ outline:none; border-color:var(--accent); }
+  #licenseError{ font-size:12px; color:var(--red); min-height:16px; margin:8px 0 2px; text-align:center; }
+  #licenseSuccess{ font-size:12px; color:var(--green); min-height:16px; margin:8px 0 2px; text-align:center; }
+  #licenseSubmitBtn{ width:100%; padding:11px; border-radius:9px; border:none; background:var(--accent); color:var(--accent-ink); font-weight:600; font-size:13.5px; cursor:pointer; margin-top:4px; }
+  #licenseSubmitBtn:hover{ filter:brightness(1.08); }
+  .license-badge{ display:inline-block; font-size:11px; padding:4px 10px; border-radius:999px; background:var(--accent-soft); color:var(--accent); font-weight:600; margin-bottom:14px; }
+  #licenseContact{ margin-top:18px; padding-top:16px; border-top:1px solid var(--border); text-align:center; }
+  #licenseContact p{ font-size:12px; color:var(--text-faint); margin:0 0 10px; }
+  #whatsappBtn{ width:100%; display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:10px 12px; border-radius:9px; border:1px solid #25D366; background:rgba(37,211,102,0.1); color:#25D366; font-weight:600; font-size:13px; cursor:pointer; }
+  #whatsappBtn:hover{ background:#25D366; color:#fff; }
+
+  /* ---------- PRINT ---------- */
+  #printArea{ display:none; }
+  .print-title{ font-family:'Space Grotesk', sans-serif; font-size:20px; font-weight:700; margin:0 0 2px; }
+  .print-meta{ font-size:12px; color:#444; margin:0 0 18px; }
+  .print-table{ width:100%; border-collapse:collapse; margin-bottom:16px; }
+  .print-table th{ text-align:left; font-size:11px; text-transform:uppercase; letter-spacing:0.4px; border-bottom:1.5px solid #000; padding:6px 8px; }
+  .print-table td{ font-size:12.5px; padding:6px 8px; border-bottom:1px solid #ccc; vertical-align:top; }
+  .print-table td.num, .print-table th.num{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .print-total-row td{ font-weight:700; border-top:2px solid #000; border-bottom:none; }
+  .print-sub{ font-size:11px; color:#555; }
+  .print-footer{ margin-top:22px; font-size:11px; color:#666; }
+
+  @media print{
+    body *{ visibility:hidden; }
+    #printArea, #printArea *{ visibility:visible; }
+    #printArea{
+      display:block; position:absolute; top:0; left:0; width:100%;
+      background:#fff; color:#000; padding:20px;
+    }
+    .print-table th{ color:#000; }
+    .print-table td{ color:#000; }
+  }
+
+  @media (max-width: 780px){
+    #app{ flex-direction:column; }
+    #cover{ width:100%; border-right:none; border-bottom:1px solid var(--sidebar-border); }
+  }
+</style>
+</head>
+<body>
+<div id="titlebar">
+  <div id="titlebar-left">
+    <div class="logo-mark">S</div>
+    <span id="titlebar-title">Stok Takip Programı</span>
+  </div>
+  <div id="titlebar-controls">
+    <button class="tb-btn" id="tbLogout" title="Çıkış Yap" aria-label="Çıkış Yap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h3"/><polyline points="15 17 20 12 15 7"/><line x1="20" y1="12" x2="8" y2="12"/></svg>
+    </button>
+    <span class="tb-divider"></span>
+    <button class="tb-btn" id="tbMin" aria-label="Küçült">–</button>
+    <button class="tb-btn" id="tbMax" aria-label="Büyüt/Geri Al">▢</button>
+    <button class="tb-btn tb-close" id="tbClose" aria-label="Kapat">✕</button>
+  </div>
+</div>
+
+<div id="mainArea">
+  <div id="app">
+    <div id="cover">
+      <div class="brand-row">
+        <div class="brand-mark">S</div>
+        <span class="brand-name">Stok Takip<br>Programı</span>
+      </div>
+      <div id="welcomeUser" style="font-size:11.5px;color:var(--text-faint);margin:-13px 0 16px 39px;"></div>
+
+      <div class="stats-row">
+        <div class="stat-chip">
+          <span id="statProducts">0</span>
+          <label>Ürün</label>
+        </div>
+        <div class="stat-chip stat-danger">
+          <span id="statCritical">0</span>
+          <label>Kritik</label>
+        </div>
+      </div>
+
+      <div class="total-card">
+        <div class="total-label">Toplam Stok Değeri</div>
+        <div class="total-value" id="totalValue">0,00 ₺</div>
+      </div>
+
+      <div id="reminders" class="hidden">
+        <div class="reminders-label">Kritik Stok</div>
+        <div id="remindersList"></div>
+      </div>
+
+      <input id="search" type="text" placeholder="Ürün ara...">
+      <select id="sortMode">
+        <option value="name">İsme Göre (A-Z)</option>
+        <option value="stockAsc">Stok Azdan Çoğa</option>
+        <option value="stockDesc">Stok Çoktan Aza</option>
+      </select>
+      <ul id="productList"></ul>
+    </div>
+
+    <div id="paper">
+      <div id="emptyState" class="empty-state">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8L12 3 3 8l9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg>
+        <p>Soldan bir ürün seçin ya da<br>yeni ürün ekleyin.</p>
+      </div>
+
+      <div id="prodView" style="display:none;">
+        <div id="prodHead">
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <h2 class="prod-header-name" id="prodName" style="margin:0 0 4px;"></h2>
+              <button class="icon-btn" id="prodEditBtn" aria-label="Ürünü düzenle" title="Ürünü düzenle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+              <button class="icon-btn" id="printProdBtn" aria-label="Ürün geçmişini yazdır" title="Ürün geçmişini yazdır"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+              <button class="icon-btn" id="exportProdCsvBtn" aria-label="CSV olarak indir" title="CSV olarak indir"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg></button>
+            </div>
+            <p class="prod-header-sub" id="prodSub"></p>
+            <button class="prod-delete" id="prodDeleteBtn">ürünü sil</button>
+          </div>
+          <div class="stock-box">
+            <div class="stock-label">Mevcut Stok</div>
+            <div class="stock-value" id="stockValue">0</div>
+          </div>
+        </div>
+
+        <div class="margin-row">
+          <div class="margin-chip"><label>Alış Fiyatı</label><span id="chipPurchase">—</span></div>
+          <div class="margin-chip"><label>Satış Fiyatı</label><span id="chipSale">—</span></div>
+          <div class="margin-chip margin-profit"><label>Birim Kâr</label><span id="chipProfit">—</span></div>
+          <div class="margin-chip"><label>Stok Değeri (alış)</label><span id="chipStockValue">—</span></div>
+        </div>
+
+        <div class="action-row">
+          <button class="action-btn btn-in" id="openInForm">+ Stok Girişi</button>
+          <button class="action-btn btn-out" id="openOutForm">+ Stok Çıkışı</button>
+        </div>
+
+        <div id="movForm">
+          <div class="field">
+            <label>Tarih</label>
+            <div class="date-wrap">
+              <input type="text" id="movDate" placeholder="GG.AA.YYYY" inputmode="numeric" maxlength="10">
+              <button type="button" class="date-pick-btn" data-native="movDateNative" aria-label="Takvimden seç">📅</button>
+              <input type="date" id="movDateNative" class="native-date-hidden" tabindex="-1">
+            </div>
+          </div>
+          <div class="field">
+            <label>Miktar</label>
+            <input type="number" id="movQty" step="0.01" min="0" placeholder="0" style="width:90px;">
+          </div>
+          <div class="field">
+            <label>Birim Fiyat (₺, opsiyonel)</label>
+            <input type="number" id="movUnitPrice" step="0.01" min="0" placeholder="0,00" style="width:110px;">
+          </div>
+          <div class="field" id="movSupplierField">
+            <label>Tedarikçi (opsiyonel)</label>
+            <select id="movSupplier"><option value="">—</option></select>
+          </div>
+          <div class="field" id="movDestinationField">
+            <label>Sevkiyat Yeri (opsiyonel)</label>
+            <select id="movDestination"><option value="">—</option></select>
+          </div>
+          <div class="field">
+            <label>Not</label>
+            <input type="text" id="movNote" placeholder="opsiyonel">
+          </div>
+          <button id="movSubmit">Kaydet</button>
+          <button id="movCancel">Vazgeç</button>
+        </div>
+
+        <table id="movTable">
+          <thead>
+            <tr>
+              <th>Tarih</th>
+              <th>Tür</th>
+              <th>Açıklama</th>
+              <th class="num">Miktar</th>
+              <th class="num">Tutar</th>
+              <th class="num">Kalan Stok</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="movBody"></tbody>
+        </table>
+        <div class="no-mov" id="noMov" style="display:none;">Henüz hareket yok.</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="bottomBar">
+    <button class="taskbar-btn taskbar-primary" id="addProductBtn">
+      <span class="tbb-icon">➕</span><span class="tbb-label">Yeni Ürün</span>
+    </button>
+    <button class="taskbar-btn taskbar-primary" id="barcodeBtn" title="Barkod ile Hızlı İşlem (F2)">
+      <span class="tbb-icon">📷</span><span class="tbb-label">Barkod (F2)</span>
+    </button>
+    <div class="taskbar-divider"></div>
+    <button class="taskbar-btn" id="suppliersBtn">
+      <span class="tbb-icon">🚚</span><span class="tbb-label">Tedarikçiler</span>
+    </button>
+    <button class="taskbar-btn" id="destinationsBtn">
+      <span class="tbb-icon">📦</span><span class="tbb-label">Sevkiyat Yerleri</span>
+    </button>
+    <div class="taskbar-divider"></div>
+    <button class="taskbar-btn" id="printAllBtn">
+      <span class="tbb-icon">🖨</span><span class="tbb-label">Stok Raporu Yazdır</span>
+    </button>
+    <button class="taskbar-btn" id="exportCsvBtn">
+      <span class="tbb-icon">⬇</span><span class="tbb-label">CSV Olarak İndir</span>
+    </button>
+    <button class="taskbar-btn" id="reportsBtn">
+      <span class="tbb-icon">📊</span><span class="tbb-label">Raporlar</span>
+    </button>
+    <div class="taskbar-divider"></div>
+    <button class="taskbar-btn" id="settingsBtn">
+      <span class="tbb-icon">⚙</span><span class="tbb-label">Ayarlar</span>
+    </button>
+  </div>
+
+  <div id="authOverlay">
+    <div id="authCard">
+      <div class="brand-row">
+        <div class="brand-mark">S</div>
+        <span class="brand-name">Stok Takip Programı</span>
+      </div>
+      <h2 id="authTitle">Giriş Yap</h2>
+      <p id="authSub">Devam etmek için kullanıcı adı ve şifreni gir.</p>
+      <form id="authForm">
+        <div class="field">
+          <label>Kullanıcı Adı</label>
+          <input type="text" id="authUsername" autocomplete="username">
+        </div>
+        <div class="field" id="authPasswordField">
+          <label>Şifre</label>
+          <div class="pw-wrap">
+            <input type="password" id="authPassword" autocomplete="current-password">
+            <button type="button" class="pw-toggle" data-target="authPassword" aria-label="Şifreyi göster/gizle">👁</button>
+          </div>
+        </div>
+        <div class="field" id="authConfirmField" style="display:none;">
+          <label>Şifre (Tekrar)</label>
+          <div class="pw-wrap">
+            <input type="password" id="authPasswordConfirm" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-target="authPasswordConfirm" aria-label="Şifreyi göster/gizle">👁</button>
+          </div>
+        </div>
+        <div class="field" id="authRecoveryField" style="display:none;">
+          <label>Kurtarma Kodu (şifreni unutursan kullanılır)</label>
+          <input type="text" id="authRecoveryCode" autocomplete="off">
+        </div>
+        <div class="field" id="authRecoveryConfirmField" style="display:none;">
+          <label>Kurtarma Kodu (Tekrar)</label>
+          <input type="text" id="authRecoveryCodeConfirm" autocomplete="off">
+        </div>
+        <div class="field" id="authResetRecoveryField" style="display:none;">
+          <label>Kurtarma Kodu</label>
+          <input type="text" id="authResetRecoveryInput" autocomplete="off">
+        </div>
+        <div class="field" id="authResetNewPassField" style="display:none;">
+          <label>Yeni Şifre</label>
+          <div class="pw-wrap">
+            <input type="password" id="authResetNewPass" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-target="authResetNewPass" aria-label="Şifreyi göster/gizle">👁</button>
+          </div>
+        </div>
+        <div class="field" id="authResetNewPassConfirmField" style="display:none;">
+          <label>Yeni Şifre (Tekrar)</label>
+          <div class="pw-wrap">
+            <input type="password" id="authResetNewPassConfirm" autocomplete="new-password">
+            <button type="button" class="pw-toggle" data-target="authResetNewPassConfirm" aria-label="Şifreyi göster/gizle">👁</button>
+          </div>
+        </div>
+        <div id="authError"></div>
+        <button type="submit" id="authSubmitBtn">Giriş Yap</button>
+      </form>
+      <div id="authToggleText"></div>
+      <div id="authForgotText" style="text-align:center;font-size:12px;margin-top:8px;"></div>
+    </div>
+  </div>
+
+  <div id="licenseOverlay">
+    <div id="licenseCard">
+      <div class="brand-row">
+        <div class="brand-mark">S</div>
+        <span class="brand-name">Stok Takip Programı</span>
+      </div>
+      <div style="text-align:center;">
+        <span class="license-badge" id="licenseBadge"></span>
+      </div>
+      <h2 id="licenseTitle">Lisans Anahtarı Gerekli</h2>
+      <p id="licenseSub">1 yıllık kullanım süren sona erdi. Devam etmek için yıllık lisans anahtarını gir.</p>
+      <form id="licenseForm">
+        <div class="field">
+          <label>Lisans Anahtarı</label>
+          <input type="text" id="licenseKeyInput" placeholder="STOK-XXXXXXXX-XXXXXXXX" autocomplete="off">
+        </div>
+        <div id="licenseError"></div>
+        <div id="licenseSuccess"></div>
+        <button type="submit" id="licenseSubmitBtn">Etkinleştir</button>
+      </form>
+      <div id="licenseContact">
+        <p>Lisans satın almak ya da bilgi almak için bize ulaş:</p>
+        <button type="button" id="whatsappBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M17.6 6.32A7.85 7.85 0 0 0 12.05 4a7.94 7.94 0 0 0-6.9 11.88L4 20l4.24-1.11a7.93 7.93 0 0 0 3.8.97h0a7.94 7.94 0 0 0 5.56-13.54zM12.05 18.4h0a6.6 6.6 0 0 1-3.36-.92l-.24-.14-2.5.66.67-2.44-.16-.25a6.6 6.6 0 1 1 12.24-3.51 6.56 6.56 0 0 1-6.65 6.6zm3.6-4.94c-.2-.1-1.17-.58-1.35-.64s-.31-.1-.44.1-.5.64-.62.77-.23.15-.43.05a5.4 5.4 0 0 1-1.6-.98 6 6 0 0 1-1.1-1.37c-.12-.2 0-.3.09-.4s.2-.23.29-.35a1.3 1.3 0 0 0 .2-.33.37.37 0 0 0 0-.35c-.05-.1-.44-1.06-.6-1.45-.16-.38-.32-.33-.44-.33h-.37a.72.72 0 0 0-.52.24 2.2 2.2 0 0 0-.68 1.63 3.8 3.8 0 0 0 .8 2.03 8.7 8.7 0 0 0 3.33 2.95c.47.2.83.32 1.11.41a2.67 2.67 0 0 0 1.23.08 2 2 0 0 0 1.32-.93 1.64 1.64 0 0 0 .11-.93c-.05-.08-.18-.13-.38-.22z"/></svg>
+          <span id="whatsappBtnLabel">WhatsApp: 0555 797 7799</span>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="modalOverlay">
+  <div class="modal-box">
+    <h3>Yeni Ürün</h3>
+    <div class="field">
+      <label>Ürün Adı</label>
+      <input type="text" id="newProdName" placeholder="örn. Süt 1L">
+    </div>
+    <div class="field">
+      <label>Kategori (opsiyonel)</label>
+      <input type="text" id="newProdCategory" placeholder="örn. Süt Ürünleri">
+    </div>
+    <div class="field">
+      <label>Birim</label>
+      <select id="newProdUnit">
+        <option value="Adet">Adet</option>
+        <option value="Kg">Kg</option>
+        <option value="Gr">Gr</option>
+        <option value="Lt">Lt</option>
+        <option value="Ml">Ml</option>
+        <option value="Paket">Paket</option>
+        <option value="Kutu">Kutu</option>
+        <option value="Koli">Koli</option>
+        <option value="Metre">Metre</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Alış Fiyatı (₺)</label>
+      <input type="number" id="newProdPurchase" step="0.01" min="0" placeholder="0,00">
+    </div>
+    <div class="field">
+      <label>Satış Fiyatı (₺)</label>
+      <input type="number" id="newProdSale" step="0.01" min="0" placeholder="0,00">
+    </div>
+    <div class="field">
+      <label>Kritik Stok Eşiği</label>
+      <input type="number" id="newProdCritical" step="0.01" min="0" placeholder="örn. 5" value="5">
+    </div>
+    <div class="field">
+      <label>Tedarikçi (opsiyonel)</label>
+      <select id="newProdSupplier"><option value="">—</option></select>
+    </div>
+    <div class="field">
+      <label>Barkod (opsiyonel)</label>
+      <input type="text" id="newProdBarcode" placeholder="barkodu okut ya da yaz" autocomplete="off">
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="modalCancel">Vazgeç</button>
+      <button class="modal-save" id="modalSave">Ekle</button>
+    </div>
+  </div>
+</div>
+
+<div id="editProdOverlay">
+  <div class="modal-box">
+    <h3>Ürünü Düzenle</h3>
+    <div class="field">
+      <label>Ürün Adı</label>
+      <input type="text" id="editProdName" placeholder="örn. Süt 1L">
+    </div>
+    <div class="field">
+      <label>Kategori (opsiyonel)</label>
+      <input type="text" id="editProdCategory" placeholder="örn. Süt Ürünleri">
+    </div>
+    <div class="field">
+      <label>Birim</label>
+      <select id="editProdUnit">
+        <option value="Adet">Adet</option>
+        <option value="Kg">Kg</option>
+        <option value="Gr">Gr</option>
+        <option value="Lt">Lt</option>
+        <option value="Ml">Ml</option>
+        <option value="Paket">Paket</option>
+        <option value="Kutu">Kutu</option>
+        <option value="Koli">Koli</option>
+        <option value="Metre">Metre</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Alış Fiyatı (₺)</label>
+      <input type="number" id="editProdPurchase" step="0.01" min="0" placeholder="0,00">
+    </div>
+    <div class="field">
+      <label>Satış Fiyatı (₺)</label>
+      <input type="number" id="editProdSale" step="0.01" min="0" placeholder="0,00">
+    </div>
+    <div class="field">
+      <label>Kritik Stok Eşiği</label>
+      <input type="number" id="editProdCritical" step="0.01" min="0" placeholder="örn. 5">
+    </div>
+    <div class="field">
+      <label>Tedarikçi (opsiyonel)</label>
+      <select id="editProdSupplier"><option value="">—</option></select>
+    </div>
+    <div class="field">
+      <label>Barkod (opsiyonel)</label>
+      <input type="text" id="editProdBarcode" placeholder="barkodu okut ya da yaz" autocomplete="off">
+    </div>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="modal-cancel" id="editProdDelete" style="color:var(--red);">Ürünü Sil</button>
+      <div>
+        <button class="modal-cancel" id="editProdCancel">Vazgeç</button>
+        <button class="modal-save" id="editProdSave">Kaydet</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="supplierListOverlay">
+  <div class="modal-box" style="width:400px;">
+    <h3>Tedarikçiler</h3>
+    <div class="field">
+      <label>Yeni Tedarikçi Adı</label>
+      <input type="text" id="newSupplierName" placeholder="örn. Anadolu Gıda Toptan">
+    </div>
+    <div class="field">
+      <label>Telefon (opsiyonel)</label>
+      <input type="text" id="newSupplierPhone" placeholder="05xx xxx xx xx">
+    </div>
+    <div class="modal-actions" style="justify-content:flex-end;margin-top:0;margin-bottom:16px;">
+      <button class="modal-save" id="addSupplierBtn">+ Ekle</button>
+    </div>
+    <hr class="sep">
+    <div id="supplierListBody" style="max-height:260px;overflow-y:auto;"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="supplierListClose">Kapat</button>
+    </div>
+  </div>
+</div>
+
+<div id="editSupplierOverlay">
+  <div class="modal-box">
+    <h3>Tedarikçiyi Düzenle</h3>
+    <div class="field">
+      <label>Tedarikçi Adı</label>
+      <input type="text" id="editSupplierName">
+    </div>
+    <div class="field">
+      <label>Telefon</label>
+      <input type="text" id="editSupplierPhone" placeholder="05xx xxx xx xx">
+    </div>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="modal-cancel" id="editSupplierDelete" style="color:var(--red);">Tedarikçiyi Sil</button>
+      <div>
+        <button class="modal-cancel" id="editSupplierCancel">Vazgeç</button>
+        <button class="modal-save" id="editSupplierSave">Kaydet</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="destinationListOverlay">
+  <div class="modal-box" style="width:400px;">
+    <h3>Sevkiyat Yerleri</h3>
+    <div class="field">
+      <label>Yeni Sevkiyat Yeri Adı</label>
+      <input type="text" id="newDestinationName" placeholder="örn. Merkez Şube">
+    </div>
+    <div class="field">
+      <label>Telefon (opsiyonel)</label>
+      <input type="text" id="newDestinationPhone" placeholder="05xx xxx xx xx">
+    </div>
+    <div class="modal-actions" style="justify-content:flex-end;margin-top:0;margin-bottom:16px;">
+      <button class="modal-save" id="addDestinationBtn">+ Ekle</button>
+    </div>
+    <hr class="sep">
+    <div id="destinationListBody" style="max-height:260px;overflow-y:auto;"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="destinationListClose">Kapat</button>
+    </div>
+  </div>
+</div>
+
+<div id="editDestinationOverlay">
+  <div class="modal-box">
+    <h3>Sevkiyat Yerini Düzenle</h3>
+    <div class="field">
+      <label>Sevkiyat Yeri Adı</label>
+      <input type="text" id="editDestinationName">
+    </div>
+    <div class="field">
+      <label>Telefon</label>
+      <input type="text" id="editDestinationPhone" placeholder="05xx xxx xx xx">
+    </div>
+    <div class="modal-actions" style="justify-content:space-between;">
+      <button class="modal-cancel" id="editDestinationDelete" style="color:var(--red);">Sevkiyat Yerini Sil</button>
+      <div>
+        <button class="modal-cancel" id="editDestinationCancel">Vazgeç</button>
+        <button class="modal-save" id="editDestinationSave">Kaydet</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="barcodeOverlay">
+  <div class="modal-box" style="width:340px;">
+    <h3>Barkod ile Hızlı İşlem</h3>
+    <div style="display:flex; gap:6px; margin-bottom:14px;">
+      <button type="button" class="seg-btn active" id="barcodeModeIn" data-mode="in">↓ Giriş</button>
+      <button type="button" class="seg-btn" id="barcodeModeOut" data-mode="out">↑ Çıkış</button>
+    </div>
+    <div class="field">
+      <label>Barkod</label>
+      <input type="text" id="barcodeInput" placeholder="Barkodu okut ya da yaz..." autocomplete="off">
+    </div>
+    <div class="field">
+      <label>Miktar</label>
+      <input type="number" id="barcodeQty" min="0.01" step="0.01" value="1">
+    </div>
+    <div id="barcodeResult" style="font-size:12px;margin:4px 0 6px;min-height:16px;"></div>
+    <p style="font-size:10.5px;color:var(--text-faint);margin:6px 0 0;line-height:1.5;">
+      İpucu: Bu pencereyi istediğin an <b>F2</b> ile açıp kapatabilirsin.
+    </p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="barcodeClose">Kapat</button>
+    </div>
+  </div>
+</div>
+
+<div id="reportsOverlay">
+  <div class="modal-box settings-modal-box">
+    <h3>Raporlar</h3>
+
+    <div class="settings-cols">
+      <div class="settings-col">
+
+        <div class="reminders-label" style="margin-bottom:8px;">Kâr / Zarar Raporu</div>
+        <div style="display:flex; gap:6px; margin-bottom:10px;">
+          <button type="button" class="seg-btn active" id="granDaily" data-gran="daily">Günlük</button>
+          <button type="button" class="seg-btn" id="granWeekly" data-gran="weekly">Haftalık</button>
+          <button type="button" class="seg-btn" id="granMonthly" data-gran="monthly">Aylık</button>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <div class="field" style="flex:1;">
+            <label>Başlangıç</label>
+            <div class="date-wrap">
+              <input type="text" id="reportStartDate" placeholder="GG.AA.YYYY" inputmode="numeric" maxlength="10">
+              <button type="button" class="date-pick-btn" data-native="reportStartDateNative" aria-label="Takvimden seç">📅</button>
+              <input type="date" id="reportStartDateNative" class="native-date-hidden" tabindex="-1">
+            </div>
+          </div>
+          <div class="field" style="flex:1;">
+            <label>Bitiş</label>
+            <div class="date-wrap">
+              <input type="text" id="reportEndDate" placeholder="GG.AA.YYYY" inputmode="numeric" maxlength="10">
+              <button type="button" class="date-pick-btn" data-native="reportEndDateNative" aria-label="Takvimden seç">📅</button>
+              <input type="date" id="reportEndDateNative" class="native-date-hidden" tabindex="-1">
+            </div>
+          </div>
+        </div>
+        <div class="modal-actions" style="justify-content:flex-end;margin-top:10px;margin-bottom:10px;">
+          <button class="modal-save" id="generateReportBtn">Raporu Oluştur</button>
+        </div>
+
+        <div id="profitSummaryRow" style="display:flex; gap:8px; margin-bottom:12px;">
+          <div class="stat-chip"><span id="repRevenue">0,00 ₺</span><label>Satış Geliri</label></div>
+          <div class="stat-chip"><span id="repCost">0,00 ₺</span><label>Maliyet</label></div>
+          <div class="stat-chip stat-danger"><span id="repProfit">0,00 ₺</span><label>Kâr/Zarar</label></div>
+        </div>
+
+        <div style="max-height:260px; overflow-y:auto;">
+          <table style="width:100%; border-collapse:collapse;">
+            <thead>
+              <tr>
+                <th style="text-align:left; font-size:10.5px; text-transform:uppercase; color:var(--text-faint); padding:0 6px 8px; border-bottom:1px solid var(--border);">Dönem</th>
+                <th style="text-align:right; font-size:10.5px; text-transform:uppercase; color:var(--text-faint); padding:0 6px 8px; border-bottom:1px solid var(--border);">Gelir</th>
+                <th style="text-align:right; font-size:10.5px; text-transform:uppercase; color:var(--text-faint); padding:0 6px 8px; border-bottom:1px solid var(--border);">Maliyet</th>
+                <th style="text-align:right; font-size:10.5px; text-transform:uppercase; color:var(--text-faint); padding:0 6px 8px; border-bottom:1px solid var(--border);">Kâr/Zarar</th>
+              </tr>
+            </thead>
+            <tbody id="profitReportBody"></tbody>
+          </table>
+        </div>
+        <p style="font-size:10.5px;color:var(--text-faint);margin:10px 0 0;line-height:1.5;">
+          Maliyet, ürünün güncel alış fiyatı üzerinden hesaplanır (geçmiş alış fiyatı değişiklikleri ayrı ayrı izlenmez).
+        </p>
+        <div class="modal-actions" style="justify-content:flex-end;margin-top:10px;">
+          <button class="modal-cancel" id="printProfitReportBtn" style="color:var(--accent);font-weight:600;">🖨 Yazdır</button>
+          <button class="modal-cancel" id="exportProfitReportBtn" style="color:var(--accent);font-weight:600;">⬇ CSV</button>
+        </div>
+
+      </div>
+
+      <div class="settings-col">
+
+        <div class="reminders-label" style="margin-bottom:8px;">En Çok Satış Yapılan Sevkiyat Yerleri</div>
+        <div id="topDestinationsBody" style="margin-bottom:18px;"></div>
+
+        <hr class="sep">
+
+        <div class="reminders-label" style="margin-bottom:8px;">En Çok Alım Yapılan Tedarikçiler</div>
+        <div id="topSuppliersBody"></div>
+
+      </div>
+    </div>
+
+    <div class="modal-actions" style="justify-content:flex-end;border-top:1px solid var(--border);padding-top:16px;margin-top:6px;">
+      <button class="modal-cancel" id="reportsClose">Kapat</button>
+    </div>
+  </div>
+</div>
+
+<div id="settingsOverlay">
+  <div class="modal-box settings-modal-box">
+    <h3>Ayarlar</h3>
+
+    <div class="settings-cols">
+      <div class="settings-col">
+
+        <div class="reminders-label" style="margin-bottom:8px;">Görünüm</div>
+        <div class="theme-switch" id="themeSwitch">
+          <label class="theme-opt">
+            <input type="radio" name="theme" id="themeDark" value="dark">
+            <span>🌙 Koyu</span>
+          </label>
+          <label class="theme-opt">
+            <input type="radio" name="theme" id="themeLight" value="light">
+            <span>☀️ Açık</span>
+          </label>
+        </div>
+
+        <hr class="sep">
+
+        <div class="reminders-label" style="margin-bottom:8px;">Lisans</div>
+        <p id="settingsLicenseStatus" style="font-size:12.5px;color:var(--text-soft);margin:0 0 10px;line-height:1.5;"></p>
+        <div class="field">
+          <label>Lisans Anahtarı Gir / Güncelle</label>
+          <input type="text" id="stLicenseKey" placeholder="STOK-XXXXXXXX-XXXXXXXX" style="font-family:'JetBrains Mono', monospace; text-transform:uppercase;">
+        </div>
+        <div id="settingsLicenseResult" style="font-size:12px;margin:2px 0 6px;min-height:16px;"></div>
+        <div class="modal-actions" style="justify-content:flex-end;margin-top:0;margin-bottom:16px;">
+          <button class="modal-save" id="settingsLicenseSave">Anahtarı Kaydet</button>
+        </div>
+
+        <hr class="sep">
+
+        <div class="reminders-label" style="margin-bottom:8px;">Hesap</div>
+        <div class="field">
+          <label>Kullanıcı Adı</label>
+          <input type="text" id="acctUsername">
+        </div>
+        <p style="font-size:11px;color:var(--text-faint);margin:0 0 10px;line-height:1.5;">
+          Şifreni değiştirmek istemiyorsan şifre alanlarını boş bırak.
+        </p>
+        <div class="field">
+          <label>Yeni Şifre</label>
+          <div class="pw-wrap">
+            <input type="password" id="acctNewPass" placeholder="••••••••">
+            <button type="button" class="pw-toggle" data-target="acctNewPass" aria-label="Şifreyi göster/gizle">👁</button>
+          </div>
+        </div>
+        <div class="field">
+          <label>Yeni Şifre (Tekrar)</label>
+          <div class="pw-wrap">
+            <input type="password" id="acctNewPassConfirm" placeholder="••••••••">
+            <button type="button" class="pw-toggle" data-target="acctNewPassConfirm" aria-label="Şifreyi göster/gizle">👁</button>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--text-faint);margin:0 0 10px;line-height:1.5;">
+          Kurtarma kodunu değiştirmek istemiyorsan boş bırak. Şifreni unutursan bu kod ile sıfırlarsın.
+        </p>
+        <div class="field">
+          <label>Yeni Kurtarma Kodu</label>
+          <input type="text" id="acctNewRecovery" placeholder="örn. bir kelime ya da kod">
+        </div>
+        <div class="field">
+          <label>Yeni Kurtarma Kodu (Tekrar)</label>
+          <input type="text" id="acctNewRecoveryConfirm" placeholder="örn. bir kelime ya da kod">
+        </div>
+        <div class="field">
+          <label>Mevcut Şifre (onay için)</label>
+          <div class="pw-wrap">
+            <input type="password" id="acctCurrentPass" placeholder="••••••••">
+            <button type="button" class="pw-toggle" data-target="acctCurrentPass" aria-label="Şifreyi göster/gizle">👁</button>
+          </div>
+        </div>
+        <div id="acctResult" style="font-size:12px;margin:2px 0 6px;min-height:16px;"></div>
+        <div class="modal-actions" style="justify-content:flex-end;margin-top:0;">
+          <button class="modal-save" id="acctSave">Hesabı Güncelle</button>
+        </div>
+
+      </div>
+
+      <div class="settings-col">
+
+        <div class="reminders-label" style="margin-bottom:8px;">Bildirimler</div>
+        <div class="toggle-row">
+          <input type="checkbox" id="stDesktopNotif">
+          <label>Kritik stok bildirimleri aç</label>
+        </div>
+        <div class="modal-actions" style="justify-content:flex-end;margin-top:0;margin-bottom:6px;">
+          <button class="modal-cancel" id="testDesktopNotifBtn" style="color:var(--accent);font-weight:600;">🔔 Test Bildirimi Gönder</button>
+        </div>
+        <div id="testDesktopNotifResult" style="font-size:12px;margin:0 0 10px;min-height:16px;"></div>
+
+        <hr class="sep">
+
+        <div class="reminders-label" style="margin-bottom:8px;">E-posta Bildirimleri</div>
+        <div class="toggle-row">
+          <input type="checkbox" id="stEmailNotif">
+          <label>E-posta bildirimleri aç</label>
+        </div>
+        <div id="emailFields">
+          <div class="field">
+            <label>SMTP Sunucu</label>
+            <input type="text" id="stSmtpHost" placeholder="smtp.gmail.com">
+          </div>
+          <div class="field">
+            <label>Port</label>
+            <input type="number" id="stSmtpPort" placeholder="465">
+          </div>
+          <div class="field">
+            <label>Gönderen E-posta</label>
+            <input type="email" id="stSmtpUser" placeholder="hesap@gmail.com">
+          </div>
+          <div class="field">
+            <label>Uygulama Şifresi</label>
+            <div class="pw-wrap">
+              <input type="password" id="stSmtpPass" placeholder="••••••••">
+              <button type="button" class="pw-toggle" data-target="stSmtpPass" aria-label="Şifreyi göster/gizle">👁</button>
+            </div>
+          </div>
+          <div class="field">
+            <label>Bildirimlerin gideceği e-posta</label>
+            <input type="email" id="stMailTo" placeholder="senin@eposta.com">
+          </div>
+          <p style="font-size:11px;color:var(--text-faint);margin:4px 0 0;line-height:1.5;">
+            Gmail kullanıyorsan normal şifre yerine bir "uygulama şifresi" (app password) oluşturman gerekir.
+          </p>
+        </div>
+        <div id="testMailResult"></div>
+        <div class="modal-actions" style="justify-content:flex-end;margin-top:0;">
+          <button class="modal-cancel" id="testMailBtn" style="color:var(--accent);font-weight:600;">Test Maili Gönder</button>
+        </div>
+
+        <hr class="sep">
+
+        <div class="reminders-label" style="margin-bottom:8px;">Yedekleme</div>
+        <div class="backup-row">
+          <button class="backup-btn" id="backupNowBtn">⬇ Şimdi Yedek Al</button>
+          <button class="backup-btn" id="restoreBackupBtn">⬆ Yedeği Geri Yükle</button>
+          <input type="file" id="restoreFileInput" accept="application/json" style="display:none;">
+        </div>
+        <button class="backup-btn" id="restoreSafetyBtn" style="width:100%;margin-bottom:14px;">🛟 Son Güvenlik Kopyasına Dön</button>
+        <p style="font-size:11px;color:var(--text-faint);margin:-10px 0 14px;line-height:1.5;">
+          Bir yedek geri yüklemeden önce, o anki verilerin otomatik güvenlik kopyası indirilir. Yanlışlıkla geri yüklersen buradan geri dönebilirsin.
+        </p>
+        <div class="toggle-row">
+          <input type="checkbox" id="stAutoBackup">
+          <label>Otomatik yedekleri e-postaya gönder</label>
+        </div>
+        <div class="field">
+          <label>Kaç günde bir (örn. 7 = haftada bir, 15 = 15 günde bir)</label>
+          <input type="number" id="stBackupIntervalDays" min="1" max="90" value="7">
+        </div>
+        <div class="field">
+          <label>Yedeklerin gideceği e-posta</label>
+          <input type="email" id="stBackupMailTo" placeholder="senin@eposta.com">
+        </div>
+        <p style="font-size:11px;color:var(--text-faint);margin:4px 0 0;line-height:1.5;">
+          Yukarıdaki e-posta bildirimi bölümündeki SMTP bilgilerini kullanır — bu yüzden önce onları doldurup kaydetmen gerekir.
+        </p>
+        <div id="backupResult"></div>
+        <div class="modal-actions" style="justify-content:flex-end;margin-top:0;">
+          <button class="modal-cancel" id="testBackupMailBtn" style="color:var(--accent);font-weight:600;">Yedeği Şimdi E-postala</button>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="modal-actions" style="justify-content:flex-end;border-top:1px solid var(--border);padding-top:16px;margin-top:6px;">
+      <button class="modal-cancel" id="settingsCancel">Kapat</button>
+      <button class="modal-save" id="settingsSave">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<div id="confirmOverlay">
+  <div class="modal-box" style="width:320px;">
+    <h3 id="confirmTitle">Emin misin?</h3>
+    <p id="confirmMessage" style="font-size:13px;color:var(--text-soft);line-height:1.5;margin:0 0 18px;"></p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="confirmCancelBtn">Vazgeç</button>
+      <button class="modal-save" id="confirmOkBtn">Tamam</button>
+    </div>
+  </div>
+</div>
+
+<div id="printArea"></div>
+
+<script>
+let state = { products: [], suppliers: [], destinations: [], movements: [] };
+let selectedProductId = null;
+let pendingMovType = null;
+let editingMovId = null;
+
+const STORAGE_KEY = 'stok-data';
+const AVATAR_COLORS = ['#4FA8E8','#7FC77F','#F0876A','#E8C15A','#B08FE8','#4FD1C5','#E88FB0'];
+
+function fmt(n){
+  return (Math.round(n*100)/100).toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2}) + ' ₺';
+}
+function fmtQty(n){
+  const r = Math.round(n*100)/100;
+  return r.toLocaleString('tr-TR', {maximumFractionDigits:2});
+}
+function todayStr(){
+  return new Date().toISOString().slice(0,10);
+}
+function avatarColor(name){
+  let hash = 0;
+  for(let i=0;i<name.length;i++){ hash = name.charCodeAt(i) + ((hash<<5)-hash); }
+  return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+}
+function escapeHtml(str){
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+/* ---------- TARİH YAZMA/AYRIŞTIRMA (GG.AA.YYYY) ---------- */
+function parseTRDate(str){
+  if(!str) return null;
+  const m = str.trim().match(/^(\d{1,2})[.\/\-](\d{1,2})[.\/\-](\d{4})$/);
+  if(!m) return null;
+  const day = parseInt(m[1],10), month = parseInt(m[2],10), year = parseInt(m[3],10);
+  if(month < 1 || month > 12 || day < 1 || day > 31) return null;
+  const iso = `${year}-${String(month).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+  const d = new Date(iso + 'T00:00:00');
+  if(isNaN(d.getTime()) || d.getDate() !== day || (d.getMonth()+1) !== month) return null;
+  return iso;
+}
+function formatTRDate(iso){
+  if(!iso) return '';
+  const [y,m,d] = iso.split('-');
+  return `${d}.${m}.${y}`;
+}
+
+/* ---------- ÖZEL ONAY / UYARI PENCERELERİ ---------- */
+function customConfirm(message, opts){
+  opts = opts || {};
+  return new Promise((resolve) => {
+    document.getElementById('confirmTitle').textContent = opts.title || 'Emin misin?';
+    document.getElementById('confirmMessage').textContent = message;
+    const okBtn = document.getElementById('confirmOkBtn');
+    const cancelBtn = document.getElementById('confirmCancelBtn');
+    okBtn.textContent = opts.okText || 'Tamam';
+    okBtn.style.background = opts.danger ? 'var(--red)' : 'var(--accent)';
+    okBtn.style.color = opts.danger ? '#fff' : 'var(--accent-ink)';
+    cancelBtn.style.display = opts.alertOnly ? 'none' : 'inline-block';
+    document.getElementById('confirmOverlay').classList.add('show');
+    function cleanup(result){
+      document.getElementById('confirmOverlay').classList.remove('show');
+      okBtn.removeEventListener('click', onOk);
+      cancelBtn.removeEventListener('click', onCancel);
+      resolve(result);
+    }
+    function onOk(){ cleanup(true); }
+    function onCancel(){ cleanup(false); }
+    okBtn.addEventListener('click', onOk);
+    cancelBtn.addEventListener('click', onCancel);
+  });
+}
+function customAlert(message, opts){
+  opts = Object.assign({}, opts, { alertOnly:true });
+  if(!opts.okText) opts.okText = 'Tamam';
+  return customConfirm(message, opts);
+}
+
+/* ---------- VERİ ---------- */
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      state = JSON.parse(raw);
+      if(!state.products) state.products = [];
+      if(!state.suppliers) state.suppliers = [];
+      if(!state.destinations) state.destinations = [];
+      if(!state.movements) state.movements = [];
+    }
+  }catch(e){
+    state = { products: [], suppliers: [], destinations: [], movements: [] };
+  }
+  render();
+}
+function saveData(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }catch(e){
+    console.error('Kaydetme hatası', e);
+  }
+}
+
+function productStock(productId){
+  return state.movements
+    .filter(m => m.productId === productId)
+    .reduce((sum,m) => sum + (m.type === 'in' ? m.quantity : -m.quantity), 0);
+}
+function isCritical(product){
+  const stock = productStock(product.id);
+  const threshold = (product.criticalQty === undefined || product.criticalQty === null) ? 0 : product.criticalQty;
+  return stock <= threshold;
+}
+function supplierName(id){
+  const s = state.suppliers.find(x => x.id === id);
+  return s ? s.name : '';
+}
+function destinationName(id){
+  const d = state.destinations.find(x => x.id === id);
+  return d ? d.name : '';
+}
+function findProductByBarcode(code){
+  const clean = (code || '').trim();
+  if(!clean) return null;
+  return state.products.find(p => (p.barcode || '').trim() === clean) || null;
+}
+
+/* ---------- LİSTELEME ---------- */
+function populateSupplierSelects(){
+  const selects = [document.getElementById('newProdSupplier'), document.getElementById('editProdSupplier'), document.getElementById('movSupplier')];
+  const sorted = state.suppliers.slice().sort((a,b) => a.name.localeCompare(b.name, 'tr'));
+  selects.forEach(sel => {
+    if(!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">—</option>' + sorted.map(s => `<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('');
+    sel.value = current;
+  });
+}
+function populateDestinationSelects(){
+  const selects = [document.getElementById('movDestination')];
+  const sorted = state.destinations.slice().sort((a,b) => a.name.localeCompare(b.name, 'tr'));
+  selects.forEach(sel => {
+    if(!sel) return;
+    const current = sel.value;
+    sel.innerHTML = '<option value="">—</option>' + sorted.map(d => `<option value="${d.id}">${escapeHtml(d.name)}</option>`).join('');
+    sel.value = current;
+  });
+}
+
+function renderProductList(){
+  const listEl = document.getElementById('productList');
+  const query = document.getElementById('search').value.trim().toLocaleLowerCase('tr-TR');
+  const sortMode = document.getElementById('sortMode').value;
+  let products = state.products.slice();
+  if(sortMode === 'stockAsc'){
+    products.sort((a,b) => productStock(a.id) - productStock(b.id) || a.name.localeCompare(b.name,'tr'));
+  } else if(sortMode === 'stockDesc'){
+    products.sort((a,b) => productStock(b.id) - productStock(a.id) || a.name.localeCompare(b.name,'tr'));
+  } else {
+    products.sort((a,b) => a.name.localeCompare(b.name, 'tr'));
+  }
+  if(query){
+    products = products.filter(p => p.name.toLocaleLowerCase('tr-TR').includes(query) || (p.category||'').toLocaleLowerCase('tr-TR').includes(query));
+  }
+  listEl.innerHTML = '';
+  if(products.length === 0){
+    listEl.innerHTML = '<li class="empty-list">Ürün bulunamadı.</li>';
+  }
+  products.forEach(p => {
+    const stock = productStock(p.id);
+    const critical = isCritical(p);
+    const color = avatarColor(p.name);
+    const li = document.createElement('li');
+    li.className = 'prod-row' + (p.id === selectedProductId ? ' active' : '') + (critical ? ' critical-row' : '');
+    li.innerHTML = `
+      <div class="prod-tab" style="background:${color}22;color:${color};">${p.name.trim().charAt(0).toLocaleUpperCase('tr-TR')}</div>
+      <div class="prod-info">
+        <div class="prod-name">${escapeHtml(p.name)}</div>
+        <div class="prod-stock ${critical ? 'critical' : ''}">${fmtQty(stock)} ${escapeHtml(p.unit || 'Adet')}</div>
+      </div>
+    `;
+    li.addEventListener('click', () => selectProduct(p.id));
+    listEl.appendChild(li);
+  });
+
+  document.getElementById('statProducts').textContent = state.products.length;
+  const criticalCount = state.products.filter(p => isCritical(p)).length;
+  document.getElementById('statCritical').textContent = criticalCount;
+
+  const totalValue = state.products.reduce((sum,p) => sum + (productStock(p.id) * (p.purchasePrice || 0)), 0);
+  document.getElementById('totalValue').textContent = fmt(totalValue);
+}
+
+function renderReminders(){
+  const panel = document.getElementById('reminders');
+  const list = document.getElementById('remindersList');
+  const critical = state.products
+    .filter(p => isCritical(p))
+    .sort((a,b) => productStock(a.id) - productStock(b.id));
+
+  if(critical.length === 0){
+    panel.classList.add('hidden');
+    list.innerHTML = '';
+    return;
+  }
+  panel.classList.remove('hidden');
+  list.innerHTML = '';
+  critical.forEach(p => {
+    const stock = productStock(p.id);
+    const item = document.createElement('div');
+    item.className = 'reminder-item';
+    item.innerHTML = `
+      <span class="reminder-name">${escapeHtml(p.name)}</span>
+      <span class="reminder-qty">${fmtQty(stock)} ${escapeHtml(p.unit || 'Adet')}</span>
+    `;
+    item.addEventListener('click', () => selectProduct(p.id));
+    list.appendChild(item);
+  });
+}
+
+function selectProduct(id){
+  selectedProductId = id;
+  document.getElementById('movForm').classList.remove('show');
+  editingMovId = null;
+  render();
+}
+
+function renderProductView(){
+  const emptyState = document.getElementById('emptyState');
+  const prodView = document.getElementById('prodView');
+  if(!selectedProductId){
+    emptyState.style.display = 'block';
+    prodView.style.display = 'none';
+    return;
+  }
+  const p = state.products.find(x => x.id === selectedProductId);
+  if(!p){
+    selectedProductId = null;
+    emptyState.style.display = 'block';
+    prodView.style.display = 'none';
+    return;
+  }
+  emptyState.style.display = 'none';
+  prodView.style.display = 'block';
+
+  document.getElementById('prodName').textContent = p.name;
+  const subParts = [];
+  if(p.category) subParts.push(p.category);
+  subParts.push(p.unit || 'Adet');
+  if(p.supplierId) subParts.push('Tedarikçi: ' + supplierName(p.supplierId));
+  document.getElementById('prodSub').textContent = subParts.join(' · ');
+
+  const stock = productStock(p.id);
+  const critical = isCritical(p);
+  const stockEl = document.getElementById('stockValue');
+  stockEl.textContent = `${fmtQty(stock)} ${p.unit || 'Adet'}`;
+  stockEl.className = 'stock-value' + (critical ? ' critical' : '');
+  const oldBadge = document.getElementById('criticalBadge');
+  if(oldBadge) oldBadge.remove();
+  if(critical){
+    const box = document.querySelector('.stock-box');
+    const badge = document.createElement('div');
+    badge.className = 'stock-badge';
+    badge.id = 'criticalBadge';
+    badge.textContent = 'Kritik Seviye';
+    box.appendChild(badge);
+  }
+
+  const purchase = p.purchasePrice || 0;
+  const sale = p.salePrice || 0;
+  const profit = sale - purchase;
+  document.getElementById('chipPurchase').textContent = fmt(purchase);
+  document.getElementById('chipSale').textContent = fmt(sale);
+  document.getElementById('chipProfit').textContent = fmt(profit) + (purchase > 0 ? ` (%${((profit/purchase)*100).toFixed(0)})` : '');
+  document.getElementById('chipStockValue').textContent = fmt(stock * purchase);
+
+  const movs = state.movements
+    .filter(m => m.productId === p.id)
+    .sort((a,b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
+
+  const tbody = document.getElementById('movBody');
+  const noMov = document.getElementById('noMov');
+  tbody.innerHTML = '';
+  if(movs.length === 0){
+    noMov.style.display = 'block';
+  } else {
+    noMov.style.display = 'none';
+    let running = 0;
+    movs.forEach(m => {
+      running += (m.type === 'in' ? m.quantity : -m.quantity);
+      const tr = document.createElement('tr');
+      const dateStr = new Date(m.date + 'T00:00:00').toLocaleDateString('tr-TR');
+      const amount = (m.unitPrice || 0) * m.quantity;
+      const noteParts = [];
+      if(m.note) noteParts.push(escapeHtml(m.note));
+      if(m.type === 'in' && m.supplierId) noteParts.push(`<span class="mov-desc">tedarikçi: ${escapeHtml(supplierName(m.supplierId))}</span>`);
+      if(m.type === 'out' && m.destinationId) noteParts.push(`<span class="mov-desc">sevkiyat yeri: ${escapeHtml(destinationName(m.destinationId))}</span>`);
+      tr.innerHTML = `
+        <td>${dateStr}</td>
+        <td><span class="mov-type-badge ${m.type}">${m.type === 'in' ? 'Giriş' : 'Çıkış'}</span></td>
+        <td class="mov-desc">${noteParts.join('<br>')}</td>
+        <td class="num ${m.type === 'in' ? 'mov-in' : 'mov-out'}">${m.type === 'in' ? '+' : '−'}${fmtQty(m.quantity)} ${p.unit || ''}</td>
+        <td class="num">${m.unitPrice ? fmt(amount) : ''}</td>
+        <td class="num">${fmtQty(running)}</td>
+        <td style="white-space:nowrap;">
+          <button class="mov-edit" data-id="${m.id}" aria-label="Kaydı düzenle"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+          <button class="mov-del" data-id="${m.id}" aria-label="Kaydı sil"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+        </td>
+      `;
+      tbody.appendChild(tr);
+    });
+    tbody.querySelectorAll('.mov-edit').forEach(btn => {
+      btn.addEventListener('click', () => openEditMovForm(btn.dataset.id));
+    });
+    tbody.querySelectorAll('.mov-del').forEach(btn => {
+      btn.addEventListener('click', () => deleteMovement(btn.dataset.id));
+    });
+  }
+}
+
+function deleteMovement(id){
+  state.movements = state.movements.filter(m => m.id !== id);
+  saveData();
+  render();
+}
+
+function render(){
+  populateSupplierSelects();
+  populateDestinationSelects();
+  renderProductList();
+  renderProductView();
+  renderReminders();
+}
+
+/* ---------- YENİ / DÜZENLE: ÜRÜN ---------- */
+document.getElementById('addProductBtn').addEventListener('click', () => {
+  document.getElementById('newProdName').value = '';
+  document.getElementById('newProdCategory').value = '';
+  document.getElementById('newProdUnit').value = 'Adet';
+  document.getElementById('newProdPurchase').value = '';
+  document.getElementById('newProdSale').value = '';
+  document.getElementById('newProdCritical').value = '5';
+  document.getElementById('newProdSupplier').value = '';
+  document.getElementById('newProdBarcode').value = '';
+  document.getElementById('modalOverlay').classList.add('show');
+  document.getElementById('newProdName').focus();
+});
+document.getElementById('modalCancel').addEventListener('click', () => {
+  document.getElementById('modalOverlay').classList.remove('show');
+});
+document.getElementById('modalSave').addEventListener('click', () => {
+  const name = document.getElementById('newProdName').value.trim();
+  if(!name) return;
+  const id = 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  state.products.push({
+    id, name,
+    category: document.getElementById('newProdCategory').value.trim(),
+    unit: document.getElementById('newProdUnit').value,
+    purchasePrice: parseFloat(document.getElementById('newProdPurchase').value) || 0,
+    salePrice: parseFloat(document.getElementById('newProdSale').value) || 0,
+    criticalQty: parseFloat(document.getElementById('newProdCritical').value) || 0,
+    supplierId: document.getElementById('newProdSupplier').value || null,
+    barcode: document.getElementById('newProdBarcode').value.trim(),
+    createdAt: Date.now()
+  });
+  document.getElementById('modalOverlay').classList.remove('show');
+  selectedProductId = id;
+  saveData();
+  render();
+});
+
+document.getElementById('prodEditBtn').addEventListener('click', () => {
+  const p = state.products.find(x => x.id === selectedProductId);
+  if(!p) return;
+  document.getElementById('editProdName').value = p.name;
+  document.getElementById('editProdCategory').value = p.category || '';
+  document.getElementById('editProdUnit').value = p.unit || 'Adet';
+  document.getElementById('editProdPurchase').value = p.purchasePrice || 0;
+  document.getElementById('editProdSale').value = p.salePrice || 0;
+  document.getElementById('editProdCritical').value = p.criticalQty || 0;
+  document.getElementById('editProdSupplier').value = p.supplierId || '';
+  document.getElementById('editProdBarcode').value = p.barcode || '';
+  document.getElementById('editProdOverlay').classList.add('show');
+});
+document.getElementById('editProdCancel').addEventListener('click', () => {
+  document.getElementById('editProdOverlay').classList.remove('show');
+});
+document.getElementById('editProdSave').addEventListener('click', () => {
+  const p = state.products.find(x => x.id === selectedProductId);
+  if(!p) return;
+  const name = document.getElementById('editProdName').value.trim();
+  if(!name) return;
+  p.name = name;
+  p.category = document.getElementById('editProdCategory').value.trim();
+  p.unit = document.getElementById('editProdUnit').value;
+  p.purchasePrice = parseFloat(document.getElementById('editProdPurchase').value) || 0;
+  p.salePrice = parseFloat(document.getElementById('editProdSale').value) || 0;
+  p.criticalQty = parseFloat(document.getElementById('editProdCritical').value) || 0;
+  p.supplierId = document.getElementById('editProdSupplier').value || null;
+  p.barcode = document.getElementById('editProdBarcode').value.trim();
+  document.getElementById('editProdOverlay').classList.remove('show');
+  saveData();
+  render();
+});
+document.getElementById('editProdDelete').addEventListener('click', async () => {
+  const p = state.products.find(x => x.id === selectedProductId);
+  if(!p) return;
+  const ok = await customConfirm(`${p.name} adlı ürünü ve tüm hareket geçmişini silmek istiyor musunuz? Bu işlem geri alınamaz.`, { title:'Ürünü Sil', okText:'Sil', danger:true });
+  if(!ok) return;
+  state.products = state.products.filter(x => x.id !== selectedProductId);
+  state.movements = state.movements.filter(m => m.productId !== selectedProductId);
+  selectedProductId = null;
+  document.getElementById('editProdOverlay').classList.remove('show');
+  saveData();
+  render();
+});
+document.getElementById('prodDeleteBtn').addEventListener('click', () => {
+  document.getElementById('prodEditBtn').click();
+});
+
+/* ---------- TEDARİKÇİLER ---------- */
+function renderSupplierListBody(){
+  const body = document.getElementById('supplierListBody');
+  const sorted = state.suppliers.slice().sort((a,b) => a.name.localeCompare(b.name,'tr'));
+  if(sorted.length === 0){
+    body.innerHTML = '<p style="font-size:12.5px;color:var(--text-faint);font-style:italic;">Henüz tedarikçi eklenmedi.</p>';
+    return;
+  }
+  body.innerHTML = sorted.map(s => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 4px;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-size:13px;color:var(--text);">${escapeHtml(s.name)}</div>
+        <div style="font-size:11.5px;color:var(--text-faint);">${escapeHtml(s.phone || '')}</div>
+      </div>
+      <button class="icon-btn supplier-edit-btn" data-id="${s.id}" aria-label="Düzenle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+    </div>
+  `).join('');
+  body.querySelectorAll('.supplier-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => openEditSupplier(btn.dataset.id));
+  });
+}
+
+document.getElementById('suppliersBtn').addEventListener('click', () => {
+  document.getElementById('newSupplierName').value = '';
+  document.getElementById('newSupplierPhone').value = '';
+  renderSupplierListBody();
+  document.getElementById('supplierListOverlay').classList.add('show');
+});
+document.getElementById('supplierListClose').addEventListener('click', () => {
+  document.getElementById('supplierListOverlay').classList.remove('show');
+});
+document.getElementById('addSupplierBtn').addEventListener('click', () => {
+  const name = document.getElementById('newSupplierName').value.trim();
+  if(!name) return;
+  const id = 's_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  state.suppliers.push({ id, name, phone: document.getElementById('newSupplierPhone').value.trim(), createdAt: Date.now() });
+  document.getElementById('newSupplierName').value = '';
+  document.getElementById('newSupplierPhone').value = '';
+  saveData();
+  populateSupplierSelects();
+  renderSupplierListBody();
+});
+
+let editingSupplierId = null;
+function openEditSupplier(id){
+  const s = state.suppliers.find(x => x.id === id);
+  if(!s) return;
+  editingSupplierId = id;
+  document.getElementById('editSupplierName').value = s.name;
+  document.getElementById('editSupplierPhone').value = s.phone || '';
+  document.getElementById('editSupplierOverlay').classList.add('show');
+}
+document.getElementById('editSupplierCancel').addEventListener('click', () => {
+  document.getElementById('editSupplierOverlay').classList.remove('show');
+});
+document.getElementById('editSupplierSave').addEventListener('click', () => {
+  const s = state.suppliers.find(x => x.id === editingSupplierId);
+  if(!s) return;
+  const name = document.getElementById('editSupplierName').value.trim();
+  if(!name) return;
+  s.name = name;
+  s.phone = document.getElementById('editSupplierPhone').value.trim();
+  document.getElementById('editSupplierOverlay').classList.remove('show');
+  saveData();
+  populateSupplierSelects();
+  renderSupplierListBody();
+  render();
+});
+document.getElementById('editSupplierDelete').addEventListener('click', async () => {
+  const s = state.suppliers.find(x => x.id === editingSupplierId);
+  if(!s) return;
+  const ok = await customConfirm(`${s.name} adlı tedarikçiyi silmek istiyor musunuz? Bu tedarikçiye bağlı ürünlerin tedarikçi bilgisi temizlenecek.`, { title:'Tedarikçiyi Sil', okText:'Sil', danger:true });
+  if(!ok) return;
+  state.suppliers = state.suppliers.filter(x => x.id !== editingSupplierId);
+  state.products.forEach(p => { if(p.supplierId === editingSupplierId) p.supplierId = null; });
+  state.movements.forEach(m => { if(m.supplierId === editingSupplierId) m.supplierId = null; });
+  document.getElementById('editSupplierOverlay').classList.remove('show');
+  saveData();
+  populateSupplierSelects();
+  renderSupplierListBody();
+  render();
+});
+
+/* ---------- SEVKİYAT YERLERİ ---------- */
+function renderDestinationListBody(){
+  const body = document.getElementById('destinationListBody');
+  const sorted = state.destinations.slice().sort((a,b) => a.name.localeCompare(b.name,'tr'));
+  if(sorted.length === 0){
+    body.innerHTML = '<p style="font-size:12.5px;color:var(--text-faint);font-style:italic;">Henüz sevkiyat yeri eklenmedi.</p>';
+    return;
+  }
+  body.innerHTML = sorted.map(d => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 4px;border-bottom:1px solid var(--border);">
+      <div>
+        <div style="font-size:13px;color:var(--text);">${escapeHtml(d.name)}</div>
+        <div style="font-size:11.5px;color:var(--text-faint);">${escapeHtml(d.phone || '')}</div>
+      </div>
+      <button class="icon-btn destination-edit-btn" data-id="${d.id}" aria-label="Düzenle"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>
+    </div>
+  `).join('');
+  body.querySelectorAll('.destination-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => openEditDestination(btn.dataset.id));
+  });
+}
+document.getElementById('destinationsBtn').addEventListener('click', () => {
+  document.getElementById('newDestinationName').value = '';
+  document.getElementById('newDestinationPhone').value = '';
+  renderDestinationListBody();
+  document.getElementById('destinationListOverlay').classList.add('show');
+});
+document.getElementById('destinationListClose').addEventListener('click', () => {
+  document.getElementById('destinationListOverlay').classList.remove('show');
+});
+document.getElementById('addDestinationBtn').addEventListener('click', () => {
+  const name = document.getElementById('newDestinationName').value.trim();
+  if(!name) return;
+  const id = 'd_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  state.destinations.push({ id, name, phone: document.getElementById('newDestinationPhone').value.trim(), createdAt: Date.now() });
+  document.getElementById('newDestinationName').value = '';
+  document.getElementById('newDestinationPhone').value = '';
+  saveData();
+  populateDestinationSelects();
+  renderDestinationListBody();
+});
+
+let editingDestinationId = null;
+function openEditDestination(id){
+  const d = state.destinations.find(x => x.id === id);
+  if(!d) return;
+  editingDestinationId = id;
+  document.getElementById('editDestinationName').value = d.name;
+  document.getElementById('editDestinationPhone').value = d.phone || '';
+  document.getElementById('editDestinationOverlay').classList.add('show');
+}
+document.getElementById('editDestinationCancel').addEventListener('click', () => {
+  document.getElementById('editDestinationOverlay').classList.remove('show');
+});
+document.getElementById('editDestinationSave').addEventListener('click', () => {
+  const d = state.destinations.find(x => x.id === editingDestinationId);
+  if(!d) return;
+  const name = document.getElementById('editDestinationName').value.trim();
+  if(!name) return;
+  d.name = name;
+  d.phone = document.getElementById('editDestinationPhone').value.trim();
+  document.getElementById('editDestinationOverlay').classList.remove('show');
+  saveData();
+  populateDestinationSelects();
+  renderDestinationListBody();
+  render();
+});
+document.getElementById('editDestinationDelete').addEventListener('click', async () => {
+  const d = state.destinations.find(x => x.id === editingDestinationId);
+  if(!d) return;
+  const ok = await customConfirm(`${d.name} adlı sevkiyat yerini silmek istiyor musunuz? Bu sevkiyat yerine bağlı hareketlerin bilgisi temizlenecek.`, { title:'Sevkiyat Yerini Sil', okText:'Sil', danger:true });
+  if(!ok) return;
+  state.destinations = state.destinations.filter(x => x.id !== editingDestinationId);
+  state.movements.forEach(m => { if(m.destinationId === editingDestinationId) m.destinationId = null; });
+  document.getElementById('editDestinationOverlay').classList.remove('show');
+  saveData();
+  populateDestinationSelects();
+  renderDestinationListBody();
+  render();
+});
+
+/* ---------- STOK HAREKETİ FORMU ---------- */
+document.getElementById('openInForm').addEventListener('click', () => openMovForm('in'));
+document.getElementById('openOutForm').addEventListener('click', () => openMovForm('out'));
+document.getElementById('movCancel').addEventListener('click', () => {
+  document.getElementById('movForm').classList.remove('show');
+  editingMovId = null;
+  document.getElementById('movSubmit').textContent = 'Kaydet';
+});
+
+document.querySelectorAll('.date-pick-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const native = document.getElementById(btn.dataset.native);
+    if(!native) return;
+    native.classList.add('native-date-active');
+    native.focus();
+    try{
+      if(native.showPicker) native.showPicker();
+    }catch(e){ /* input artık görünür/tıklanabilir, kullanıcı manuel açabilir */ }
+  });
+});
+function hideNativeDate(e){ e.target.classList.remove('native-date-active'); }
+document.getElementById('movDateNative').addEventListener('change', (e) => {
+  if(e.target.value) document.getElementById('movDate').value = formatTRDate(e.target.value);
+  hideNativeDate(e);
+});
+document.getElementById('movDateNative').addEventListener('blur', hideNativeDate);
+document.getElementById('reportStartDateNative').addEventListener('change', (e) => {
+  if(e.target.value) document.getElementById('reportStartDate').value = formatTRDate(e.target.value);
+  hideNativeDate(e);
+});
+document.getElementById('reportStartDateNative').addEventListener('blur', hideNativeDate);
+document.getElementById('reportEndDateNative').addEventListener('change', (e) => {
+  if(e.target.value) document.getElementById('reportEndDate').value = formatTRDate(e.target.value);
+  hideNativeDate(e);
+});
+document.getElementById('reportEndDateNative').addEventListener('blur', hideNativeDate);
+
+/* ---------- RAPORLAR ---------- */
+let reportGranularity = 'daily';
+
+function isoDaysAgo(days){
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0,10);
+}
+function setReportDateRange(gran){
+  const end = todayStr();
+  let start;
+  if(gran === 'weekly') start = isoDaysAgo(83);
+  else if(gran === 'monthly') start = isoDaysAgo(364);
+  else start = isoDaysAgo(29);
+  document.getElementById('reportStartDate').value = formatTRDate(start);
+  document.getElementById('reportEndDate').value = formatTRDate(end);
+}
+function setGranularity(gran){
+  reportGranularity = gran;
+  ['granDaily','granWeekly','granMonthly'].forEach(id => document.getElementById(id).classList.remove('active'));
+  document.getElementById('gran' + gran.charAt(0).toUpperCase() + gran.slice(1)).classList.add('active');
+  setReportDateRange(gran);
+}
+document.getElementById('granDaily').addEventListener('click', () => { setGranularity('daily'); generateProfitReport(); });
+document.getElementById('granWeekly').addEventListener('click', () => { setGranularity('weekly'); generateProfitReport(); });
+document.getElementById('granMonthly').addEventListener('click', () => { setGranularity('monthly'); generateProfitReport(); });
+
+function periodKeyOf(dateISO, gran){
+  if(gran === 'daily') return dateISO;
+  if(gran === 'monthly') return dateISO.slice(0,7);
+  const d = new Date(dateISO + 'T00:00:00');
+  const dow = d.getDay() || 7;
+  const monday = new Date(d);
+  monday.setDate(d.getDate() - dow + 1);
+  return monday.toISOString().slice(0,10);
+}
+const TR_MONTHS = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+function periodLabelOf(key, gran){
+  if(gran === 'daily') return formatTRDate(key);
+  if(gran === 'monthly'){
+    const [y,m] = key.split('-');
+    return `${TR_MONTHS[parseInt(m,10)-1]} ${y}`;
+  }
+  return `${formatTRDate(key)} haftası`;
+}
+
+let lastProfitReport = [];
+function buildProfitReport(startISO, endISO, gran){
+  const movs = state.movements.filter(m => m.type === 'out' && m.date >= startISO && m.date <= endISO);
+  const buckets = {};
+  movs.forEach(m => {
+    const p = state.products.find(x => x.id === m.productId);
+    if(!p) return;
+    const key = periodKeyOf(m.date, gran);
+    if(!buckets[key]) buckets[key] = { revenue:0, cost:0 };
+    buckets[key].revenue += (m.unitPrice||0) * m.quantity;
+    buckets[key].cost += (p.purchasePrice||0) * m.quantity;
+  });
+  return Object.keys(buckets).sort().map(key => ({
+    key, label: periodLabelOf(key, gran),
+    revenue: buckets[key].revenue, cost: buckets[key].cost, profit: buckets[key].revenue - buckets[key].cost
+  }));
+}
+
+function generateProfitReport(){
+  const start = parseTRDate(document.getElementById('reportStartDate').value.trim());
+  const end = parseTRDate(document.getElementById('reportEndDate').value.trim());
+  if(!start || !end){
+    customAlert('Tarihler GG.AA.YYYY formatında olmalı.', { title:'Geçersiz Tarih' });
+    return;
+  }
+  lastProfitReport = buildProfitReport(start, end, reportGranularity);
+  const body = document.getElementById('profitReportBody');
+  let totalRevenue = 0, totalCost = 0;
+  body.innerHTML = lastProfitReport.map(row => {
+    totalRevenue += row.revenue; totalCost += row.cost;
+    return `<tr>
+      <td style="padding:7px 6px;font-size:12.5px;border-bottom:1px solid var(--border);color:var(--text-soft);">${row.label}</td>
+      <td style="padding:7px 6px;font-size:12.5px;border-bottom:1px solid var(--border);text-align:right;font-family:'JetBrains Mono',monospace;color:var(--text-soft);">${fmt(row.revenue)}</td>
+      <td style="padding:7px 6px;font-size:12.5px;border-bottom:1px solid var(--border);text-align:right;font-family:'JetBrains Mono',monospace;color:var(--text-soft);">${fmt(row.cost)}</td>
+      <td style="padding:7px 6px;font-size:12.5px;border-bottom:1px solid var(--border);text-align:right;font-family:'JetBrains Mono',monospace;font-weight:600;color:${row.profit >= 0 ? 'var(--green)' : 'var(--red)'};">${fmt(row.profit)}</td>
+    </tr>`;
+  }).join('') || '<tr><td colspan="4" style="padding:14px 6px;font-size:12.5px;color:var(--text-faint);font-style:italic;">Bu aralıkta çıkış hareketi yok.</td></tr>';
+
+  document.getElementById('repRevenue').textContent = fmt(totalRevenue);
+  document.getElementById('repCost').textContent = fmt(totalCost);
+  const profitEl = document.getElementById('repProfit');
+  const totalProfit = totalRevenue - totalCost;
+  profitEl.textContent = fmt(totalProfit);
+  profitEl.style.color = totalProfit >= 0 ? 'var(--green)' : 'var(--red)';
+}
+document.getElementById('generateReportBtn').addEventListener('click', generateProfitReport);
+
+function buildTopParties(){
+  const supplierTotals = {};
+  state.movements.filter(m => m.type === 'in' && m.supplierId).forEach(m => {
+    supplierTotals[m.supplierId] = (supplierTotals[m.supplierId] || 0) + (m.unitPrice||0) * m.quantity;
+  });
+  const destTotals = {};
+  state.movements.filter(m => m.type === 'out' && m.destinationId).forEach(m => {
+    destTotals[m.destinationId] = (destTotals[m.destinationId] || 0) + (m.unitPrice||0) * m.quantity;
+  });
+  const topSuppliers = Object.entries(supplierTotals).map(([id,amt]) => ({ name: supplierName(id), amount: amt })).sort((a,b) => b.amount - a.amount).slice(0,10);
+  const topDestinations = Object.entries(destTotals).map(([id,amt]) => ({ name: destinationName(id), amount: amt })).sort((a,b) => b.amount - a.amount).slice(0,10);
+  return { topSuppliers, topDestinations };
+}
+function renderTopPartyList(elId, list, emptyMsg){
+  const el = document.getElementById(elId);
+  if(list.length === 0){
+    el.innerHTML = `<p style="font-size:12.5px;color:var(--text-faint);font-style:italic;">${emptyMsg}</p>`;
+    return;
+  }
+  el.innerHTML = list.map((item,i) => `
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 4px;border-bottom:1px solid var(--border);">
+      <span style="font-size:12.5px;color:var(--text);">${i+1}. ${escapeHtml(item.name)}</span>
+      <span style="font-family:'JetBrains Mono',monospace;font-size:12.5px;color:var(--accent);font-weight:600;">${fmt(item.amount)}</span>
+    </div>
+  `).join('');
+}
+function renderTopParties(){
+  const { topSuppliers, topDestinations } = buildTopParties();
+  renderTopPartyList('topDestinationsBody', topDestinations, 'Henüz sevkiyat yerine bağlı çıkış hareketi yok.');
+  renderTopPartyList('topSuppliersBody', topSuppliers, 'Henüz tedarikçiye bağlı giriş hareketi yok.');
+}
+
+document.getElementById('reportsBtn').addEventListener('click', () => {
+  setGranularity('daily');
+  generateProfitReport();
+  renderTopParties();
+  document.getElementById('reportsOverlay').classList.add('show');
+});
+document.getElementById('reportsClose').addEventListener('click', () => {
+  document.getElementById('reportsOverlay').classList.remove('show');
+});
+
+document.getElementById('exportProfitReportBtn').addEventListener('click', () => {
+  if(lastProfitReport.length === 0){ generateProfitReport(); }
+  const header = ['Dönem','Satış Geliri','Maliyet','Kâr/Zarar'];
+  const rows = [header].concat(lastProfitReport.map(r => [r.label, r.revenue.toFixed(2), r.cost.toFixed(2), r.profit.toFixed(2)]));
+  downloadCSV(`kar-zarar-raporu-${todayStr()}.csv`, rows);
+});
+document.getElementById('printProfitReportBtn').addEventListener('click', async () => {
+  if(lastProfitReport.length === 0){ generateProfitReport(); }
+  const totalRevenue = lastProfitReport.reduce((s,r) => s + r.revenue, 0);
+  const totalCost = lastProfitReport.reduce((s,r) => s + r.cost, 0);
+  const rows = lastProfitReport.map(r => `<tr>
+    <td>${r.label}</td>
+    <td class="num">${fmt(r.revenue)}</td>
+    <td class="num">${fmt(r.cost)}</td>
+    <td class="num">${fmt(r.profit)}</td>
+  </tr>`).join('');
+  const granLabel = reportGranularity === 'daily' ? 'Günlük' : (reportGranularity === 'weekly' ? 'Haftalık' : 'Aylık');
+  const html = `
+    <div class="print-title">Stok Takip Programı — Kâr/Zarar Raporu (${granLabel})</div>
+    <div class="print-meta">${document.getElementById('reportStartDate').value} — ${document.getElementById('reportEndDate').value} · Oluşturulma: ${printNowStr()}</div>
+    <table class="print-table">
+      <thead><tr><th>Dönem</th><th class="num">Satış Geliri</th><th class="num">Maliyet</th><th class="num">Kâr/Zarar</th></tr></thead>
+      <tbody>
+        ${rows || '<tr><td colspan="4">Bu aralıkta çıkış hareketi yok.</td></tr>'}
+        <tr class="print-total-row"><td>Toplam</td><td class="num">${fmt(totalRevenue)}</td><td class="num">${fmt(totalCost)}</td><td class="num">${fmt(totalRevenue-totalCost)}</td></tr>
+      </tbody>
+    </table>
+    <div class="print-footer">Stok Takip Programı ile oluşturulmuştur.</div>
+  `;
+  await renderPrintOutput(html, 'kar-zarar-raporu');
+});
+
+function openMovForm(type){
+  editingMovId = null;
+  pendingMovType = type;
+  document.getElementById('movDate').value = formatTRDate(todayStr());
+  document.getElementById('movQty').value = '';
+  document.getElementById('movUnitPrice').value = '';
+  document.getElementById('movNote').value = '';
+  document.getElementById('movSupplier').value = '';
+  document.getElementById('movDestination').value = '';
+  document.getElementById('movSupplierField').style.display = (type === 'in') ? 'flex' : 'none';
+  document.getElementById('movDestinationField').style.display = (type === 'out') ? 'flex' : 'none';
+  document.getElementById('movSubmit').textContent = 'Kaydet';
+  document.getElementById('movForm').classList.add('show');
+  document.getElementById('movQty').focus();
+}
+function openEditMovForm(movId){
+  const m = state.movements.find(x => x.id === movId);
+  if(!m) return;
+  editingMovId = movId;
+  pendingMovType = m.type;
+  document.getElementById('movDate').value = formatTRDate(m.date);
+  document.getElementById('movQty').value = m.quantity;
+  document.getElementById('movUnitPrice').value = m.unitPrice || '';
+  document.getElementById('movNote').value = m.note || '';
+  document.getElementById('movSupplier').value = m.supplierId || '';
+  document.getElementById('movDestination').value = m.destinationId || '';
+  document.getElementById('movSupplierField').style.display = (m.type === 'in') ? 'flex' : 'none';
+  document.getElementById('movDestinationField').style.display = (m.type === 'out') ? 'flex' : 'none';
+  document.getElementById('movSubmit').textContent = 'Güncelle';
+  document.getElementById('movForm').classList.add('show');
+  document.getElementById('movQty').focus();
+}
+
+document.getElementById('movSubmit').addEventListener('click', async () => {
+  const qty = parseFloat(document.getElementById('movQty').value);
+  if(!qty || qty <= 0){ return; }
+  const dateInput = document.getElementById('movDate').value.trim();
+  const date = parseTRDate(dateInput);
+  if(!date){
+    await customAlert('Tarih GG.AA.YYYY formatında olmalı (örn. 15.08.2026).', { title:'Geçersiz Tarih' });
+    return;
+  }
+  const unitPrice = parseFloat(document.getElementById('movUnitPrice').value) || 0;
+  const note = document.getElementById('movNote').value.trim();
+  const supplierId = (pendingMovType === 'in') ? (document.getElementById('movSupplier').value || null) : null;
+  const destinationId = (pendingMovType === 'out') ? (document.getElementById('movDestination').value || null) : null;
+
+  if(editingMovId){
+    const m = state.movements.find(x => x.id === editingMovId);
+    if(m){
+      m.quantity = qty;
+      m.date = date;
+      m.unitPrice = unitPrice;
+      m.note = note;
+      m.supplierId = supplierId;
+      m.destinationId = destinationId;
+    }
+    editingMovId = null;
+  } else {
+    const id = 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+    state.movements.push({
+      id, productId: selectedProductId, type: pendingMovType,
+      quantity: qty, unitPrice, note, date, supplierId, destinationId, createdAt: Date.now()
+    });
+  }
+  document.getElementById('movForm').classList.remove('show');
+  document.getElementById('movSubmit').textContent = 'Kaydet';
+  saveData();
+  render();
+});
+
+/* ---------- ÖZEL BAŞLIK ÇUBUĞU ---------- */
+if(typeof window.electronAPI !== 'undefined' && window.electronAPI.windowControls){
+  const wc = window.electronAPI.windowControls;
+  document.getElementById('tbMin').addEventListener('click', () => wc.minimize());
+  document.getElementById('tbMax').addEventListener('click', () => wc.maximizeToggle());
+  document.getElementById('tbClose').addEventListener('click', () => wc.close());
+} else {
+  document.getElementById('tbMin').style.display = 'none';
+  document.getElementById('tbMax').style.display = 'none';
+  document.getElementById('tbClose').style.display = 'none';
+}
+
+/* ---------- ŞİFRE GÖSTER/GİZLE ---------- */
+document.querySelectorAll('.pw-toggle').forEach(btn => {
+  btn.addEventListener('click', () => {
+    const input = document.getElementById(btn.dataset.target);
+    if(!input) return;
+    input.type = input.type === 'password' ? 'text' : 'password';
+    btn.textContent = input.type === 'password' ? '👁' : '🙈';
+  });
+});
+
+document.getElementById('search').addEventListener('input', renderProductList);
+
+/* ---------- BARKOD İLE HIZLI İŞLEM ---------- */
+let barcodeMode = 'in';
+document.getElementById('barcodeModeIn').addEventListener('click', () => {
+  barcodeMode = 'in';
+  document.getElementById('barcodeModeIn').classList.add('active');
+  document.getElementById('barcodeModeOut').classList.remove('active');
+  document.getElementById('barcodeInput').focus();
+});
+document.getElementById('barcodeModeOut').addEventListener('click', () => {
+  barcodeMode = 'out';
+  document.getElementById('barcodeModeOut').classList.add('active');
+  document.getElementById('barcodeModeIn').classList.remove('active');
+  document.getElementById('barcodeInput').focus();
+});
+
+function openBarcodeModal(){
+  document.getElementById('barcodeResult').textContent = '';
+  document.getElementById('barcodeInput').value = '';
+  document.getElementById('barcodeOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('barcodeInput').focus(), 60);
+}
+function closeBarcodeModal(){
+  document.getElementById('barcodeOverlay').classList.remove('show');
+}
+document.getElementById('barcodeBtn').addEventListener('click', openBarcodeModal);
+document.getElementById('barcodeClose').addEventListener('click', closeBarcodeModal);
+
+// Tek tuşla açma/kapama: F2 (Electron'un varsayılan menüsü kapatıldığı için
+// F5/F11/F12 gibi tuşlarla çakışma riski yok).
+document.addEventListener('keydown', (e) => {
+  if(e.key !== 'F2') return;
+  if(document.getElementById('authOverlay').classList.contains('show')) return;
+  if(document.getElementById('licenseOverlay').classList.contains('show')) return;
+  e.preventDefault();
+  if(document.getElementById('barcodeOverlay').classList.contains('show')){
+    closeBarcodeModal();
+  } else {
+    openBarcodeModal();
+  }
+});
+document.getElementById('barcodeOverlay').addEventListener('keydown', (e) => {
+  if(e.key === 'Escape') closeBarcodeModal();
+});
+
+function showBarcodeResult(msg, kind){
+  const el = document.getElementById('barcodeResult');
+  el.style.color = kind === 'error' ? 'var(--red)' : (kind === 'success' ? 'var(--green)' : 'var(--text-faint)');
+  el.textContent = msg;
+}
+
+document.getElementById('barcodeInput').addEventListener('keydown', async (e) => {
+  if(e.key !== 'Enter') return;
+  e.preventDefault();
+  const code = document.getElementById('barcodeInput').value.trim();
+  if(!code) return;
+  const product = findProductByBarcode(code);
+  const qty = parseFloat(document.getElementById('barcodeQty').value) || 1;
+
+  if(!product){
+    showBarcodeResult(`"${code}" barkodlu ürün bulunamadı.`, 'error');
+    const wantsCreate = await customConfirm(`"${code}" barkodlu bir ürün kayıtlı değil. Bu barkodla yeni ürün eklemek ister misin?`, { title:'Ürün Bulunamadı', okText:'Yeni Ürün Ekle' });
+    if(wantsCreate){
+      document.getElementById('barcodeInput').value = '';
+      document.getElementById('addProductBtn').click();
+      document.getElementById('newProdBarcode').value = code;
+    } else {
+      document.getElementById('barcodeInput').select();
+    }
+    return;
+  }
+
+  if(barcodeMode === 'out' && productStock(product.id) < qty){
+    showBarcodeResult(`⚠ ${product.name}: yetersiz stok (mevcut ${fmtQty(productStock(product.id))} ${product.unit||''}).`, 'error');
+    document.getElementById('barcodeInput').select();
+    return;
+  }
+
+  const id = 'm_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  const unitPrice = barcodeMode === 'in' ? (product.purchasePrice || 0) : (product.salePrice || 0);
+  state.movements.push({
+    id, productId: product.id, type: barcodeMode,
+    quantity: qty, unitPrice, note: 'Barkod ile hızlı işlem',
+    date: todayStr(), supplierId: null, destinationId: null, createdAt: Date.now()
+  });
+  saveData();
+  selectedProductId = product.id;
+  render();
+
+  const verb = barcodeMode === 'in' ? 'girişi' : 'çıkışı';
+  showBarcodeResult(`✓ ${product.name}: ${fmtQty(qty)} ${product.unit||''} ${verb} kaydedildi.`, 'success');
+  document.getElementById('barcodeInput').value = '';
+  document.getElementById('barcodeInput').focus();
+});
+document.getElementById('sortMode').addEventListener('change', renderProductList);
+
+/* ---------- AYARLAR ---------- */
+const SETTINGS_KEY = 'stok-settings';
+let settings = {
+  theme: 'dark',
+  desktopNotif: false,
+  emailNotif: false,
+  smtpHost: '', smtpPort: 465, smtpUser: '', smtpPass: '', mailTo: '',
+  lastEmailSentDate: null,
+  autoBackup: false,
+  backupIntervalDays: 7,
+  backupMailTo: '',
+  lastBackupSentAt: null,
+  lastCriticalNotifiedDate: null
+};
+
+function applyTheme(theme){
+  if(theme === 'light'){
+    document.documentElement.setAttribute('data-theme', 'light');
+  } else {
+    document.documentElement.removeAttribute('data-theme');
+  }
+}
+function loadSettings(){
+  try{
+    const raw = localStorage.getItem(SETTINGS_KEY);
+    if(raw) settings = Object.assign(settings, JSON.parse(raw));
+  }catch(e){}
+}
+function saveSettings(){
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+}
+
+function fillSettingsForm(){
+  document.getElementById('settingsLicenseStatus').textContent = licenseStatusLabel();
+  document.getElementById('stLicenseKey').value = '';
+  document.getElementById('settingsLicenseResult').textContent = '';
+  document.getElementById('acctUsername').value = auth ? auth.username : '';
+  document.getElementById('acctNewPass').value = '';
+  document.getElementById('acctNewPassConfirm').value = '';
+  document.getElementById('acctNewRecovery').value = '';
+  document.getElementById('acctNewRecoveryConfirm').value = '';
+  document.getElementById('acctCurrentPass').value = '';
+  document.getElementById('acctResult').textContent = '';
+  document.getElementById(settings.theme === 'light' ? 'themeLight' : 'themeDark').checked = true;
+  document.getElementById('stDesktopNotif').checked = !!settings.desktopNotif;
+  document.getElementById('stEmailNotif').checked = !!settings.emailNotif;
+  document.getElementById('stSmtpHost').value = settings.smtpHost || '';
+  document.getElementById('stSmtpPort').value = settings.smtpPort || 465;
+  document.getElementById('stSmtpUser').value = settings.smtpUser || '';
+  document.getElementById('stSmtpPass').value = settings.smtpPass || '';
+  document.getElementById('stMailTo').value = settings.mailTo || '';
+  document.getElementById('testMailResult').textContent = '';
+  document.getElementById('stAutoBackup').checked = !!settings.autoBackup;
+  document.getElementById('stBackupIntervalDays').value = settings.backupIntervalDays || 7;
+  document.getElementById('stBackupMailTo').value = settings.backupMailTo || '';
+  document.getElementById('backupResult').textContent = '';
+  document.getElementById('testDesktopNotifResult').textContent = '';
+}
+
+document.querySelectorAll('input[name="theme"]').forEach(r => {
+  r.addEventListener('change', () => applyTheme(r.value));
+});
+document.getElementById('settingsBtn').addEventListener('click', () => {
+  fillSettingsForm();
+  document.getElementById('settingsOverlay').classList.add('show');
+});
+document.getElementById('settingsCancel').addEventListener('click', () => {
+  applyTheme(settings.theme);
+  document.getElementById('settingsOverlay').classList.remove('show');
+});
+document.getElementById('settingsSave').addEventListener('click', () => {
+  const themeChecked = document.querySelector('input[name="theme"]:checked');
+  settings.theme = themeChecked ? themeChecked.value : 'dark';
+  settings.desktopNotif = document.getElementById('stDesktopNotif').checked;
+  settings.emailNotif = document.getElementById('stEmailNotif').checked;
+  settings.smtpHost = document.getElementById('stSmtpHost').value.trim();
+  settings.smtpPort = document.getElementById('stSmtpPort').value.trim();
+  settings.smtpUser = document.getElementById('stSmtpUser').value.trim();
+  settings.smtpPass = document.getElementById('stSmtpPass').value;
+  settings.mailTo = document.getElementById('stMailTo').value.trim();
+  settings.autoBackup = document.getElementById('stAutoBackup').checked;
+  settings.backupIntervalDays = parseInt(document.getElementById('stBackupIntervalDays').value) || 7;
+  settings.backupMailTo = document.getElementById('stBackupMailTo').value.trim();
+  saveSettings();
+  applyTheme(settings.theme);
+  if(settings.desktopNotif) requestDesktopPermission();
+  document.getElementById('settingsOverlay').classList.remove('show');
+  checkCriticalStock(true);
+});
+
+function requestDesktopPermission(){
+  if(typeof Notification === 'undefined') return;
+  if(Notification.permission !== 'granted' && Notification.permission !== 'denied'){
+    Notification.requestPermission();
+  }
+}
+document.getElementById('testDesktopNotifBtn').addEventListener('click', async () => {
+  const resultEl = document.getElementById('testDesktopNotifResult');
+  if(typeof Notification === 'undefined'){
+    resultEl.style.color = 'var(--red)';
+    resultEl.textContent = 'Bu ortamda bildirim desteği yok.';
+    return;
+  }
+  if(Notification.permission === 'denied'){
+    resultEl.style.color = 'var(--red)';
+    resultEl.textContent = 'Bildirim izni reddedilmiş. Windows Ayarları → Bildirimler → Stok Takip Programı\'nı kontrol et.';
+    return;
+  }
+  if(Notification.permission !== 'granted'){
+    await Notification.requestPermission();
+  }
+  if(Notification.permission === 'granted'){
+    new Notification('Stok Takip Programı', { body: 'Test bildirimi — bunu görüyorsan bildirimler çalışıyor.' });
+    resultEl.style.color = 'var(--green)';
+    resultEl.textContent = 'Test bildirimi gönderildi.';
+  } else {
+    resultEl.style.color = 'var(--red)';
+    resultEl.textContent = 'Bildirim izni alınamadı.';
+  }
+});
+
+async function checkCriticalStock(force){
+  const criticalList = state.products.filter(p => isCritical(p));
+  const today = todayStr();
+  if(settings.desktopNotif && typeof Notification !== 'undefined' && Notification.permission === 'granted' && criticalList.length > 0){
+    if(force || settings.lastCriticalNotifiedDate !== today){
+      const body = criticalList.slice(0,5).map(p => `${p.name}: ${fmtQty(productStock(p.id))} ${p.unit||''}`).join('\n');
+      new Notification('Kritik Stok Uyarısı', { body: criticalList.length > 5 ? body + `\n... ve ${criticalList.length-5} ürün daha` : body });
+      settings.lastCriticalNotifiedDate = today;
+      saveSettings();
+    }
+  }
+  if(settings.emailNotif && criticalList.length > 0 && (force || settings.lastEmailSentDate !== today)){
+    const res = await sendCriticalStockEmail(criticalList);
+    if(res && res.ok){
+      settings.lastEmailSentDate = today;
+      saveSettings();
+    }
+  }
+}
+async function sendCriticalStockEmail(list){
+  if(typeof window.electronAPI === 'undefined' || !window.electronAPI.sendEmail){
+    return { ok:false, error:'E-posta gönderimi yalnızca masaüstü uygulamasında çalışır.' };
+  }
+  const lines = list.map(p => `${p.name} — ${fmtQty(productStock(p.id))} ${p.unit||''} (eşik: ${fmtQty(p.criticalQty||0)})`).join('\n');
+  const html = '<p>Kritik seviyedeki ürünler:</p><ul>' + list.map(p => `<li>${escapeHtml(p.name)} — ${fmtQty(productStock(p.id))} ${escapeHtml(p.unit||'')} (eşik: ${fmtQty(p.criticalQty||0)})</li>`).join('') + '</ul>';
+  return await window.electronAPI.sendEmail({
+    smtp: { host: settings.smtpHost, port: settings.smtpPort, user: settings.smtpUser, pass: settings.smtpPass },
+    mail: { to: settings.mailTo || settings.smtpUser, subject: `Stok Takip — ${list.length} ürün kritik seviyede`, text: lines, html }
+  });
+}
+document.getElementById('testMailBtn').addEventListener('click', async () => {
+  const resultEl = document.getElementById('testMailResult');
+  resultEl.style.color = 'var(--text-faint)';
+  resultEl.textContent = 'Gönderiliyor...';
+  const smtp = {
+    host: document.getElementById('stSmtpHost').value.trim(),
+    port: document.getElementById('stSmtpPort').value.trim(),
+    user: document.getElementById('stSmtpUser').value.trim(),
+    pass: document.getElementById('stSmtpPass').value
+  };
+  const to = document.getElementById('stMailTo').value.trim() || smtp.user;
+  if(typeof window.electronAPI === 'undefined' || !window.electronAPI.sendEmail){
+    resultEl.style.color = 'var(--red)';
+    resultEl.textContent = 'E-posta gönderimi yalnızca masaüstü uygulamasında çalışır.';
+    return;
+  }
+  const res = await window.electronAPI.sendEmail({
+    smtp,
+    mail: { to, subject: 'Stok Takip Programı — Test Maili', text: 'Bu bir test mesajıdır.', html: '<p>Bu bir test mesajıdır.</p>' }
+  });
+  if(res && res.ok){
+    resultEl.style.color = 'var(--green)';
+    resultEl.textContent = 'Test maili gönderildi.';
+  } else {
+    resultEl.style.color = 'var(--red)';
+    resultEl.textContent = 'Gönderilemedi: ' + (res && res.error ? res.error : 'bilinmeyen hata');
+  }
+});
+
+/* ---------- YEDEKLEME ---------- */
+const SAFETY_BACKUP_KEY = 'stok-safety-backup';
+function backupFileName(prefix){
+  return `${prefix || 'stok-yedek'}-${todayStr()}.json`;
+}
+function buildBackupJSON(){
+  return JSON.stringify({
+    exportedAt: new Date().toISOString(),
+    products: state.products,
+    suppliers: state.suppliers,
+    movements: state.movements
+  }, null, 2);
+}
+function downloadJSONFile(filename, jsonContent){
+  const blob = new Blob([jsonContent], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function downloadBackupFile(){
+  downloadJSONFile(backupFileName('stok-yedek'), buildBackupJSON());
+}
+function saveSafetyBackup(){
+  const json = buildBackupJSON();
+  try{ localStorage.setItem(SAFETY_BACKUP_KEY, json); }catch(e){}
+  downloadJSONFile(backupFileName('guvenlik-kopyasi-geri-yuklemeden-once'), json);
+}
+document.getElementById('backupNowBtn').addEventListener('click', downloadBackupFile);
+document.getElementById('restoreBackupBtn').addEventListener('click', () => {
+  document.getElementById('restoreFileInput').click();
+});
+document.getElementById('restoreFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = async () => {
+    let data;
+    try{ data = JSON.parse(reader.result); }
+    catch(err){ await customAlert('Dosya okunamadı — geçerli bir yedek dosyası değil.', { title:'Hata' }); return; }
+    if(!data || !Array.isArray(data.products) || !Array.isArray(data.movements)){
+      await customAlert('Bu dosya geçerli bir Stok Takip yedeği gibi görünmüyor.', { title:'Hata' });
+      return;
+    }
+    const ok = await customConfirm(
+      `Bu yedek ${data.products.length} ürün içeriyor. Mevcut tüm verilerin yerine bunu yüklemek istiyor musun? Şu anki verilerin bir güvenlik kopyası otomatik olarak indirilecek.`,
+      { title:'Yedeği Geri Yükle', okText:'Geri Yükle', danger:true }
+    );
+    if(!ok) return;
+    saveSafetyBackup();
+    state = { products: data.products, suppliers: data.suppliers || [], movements: data.movements };
+    selectedProductId = null;
+    saveData();
+    render();
+    await customAlert('Yedek başarıyla geri yüklendi. Önceki verilerinin güvenlik kopyası indirilenler klasörüne kaydedildi.', { title:'Tamamlandı' });
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+});
+document.getElementById('restoreSafetyBtn').addEventListener('click', async () => {
+  let raw;
+  try{ raw = localStorage.getItem(SAFETY_BACKUP_KEY); }catch(e){}
+  if(!raw){
+    await customAlert('Henüz bir güvenlik kopyası oluşmamış. Bu yalnızca bir yedek geri yüklendikten sonra kullanılabilir.', { title:'Güvenlik Kopyası Yok' });
+    return;
+  }
+  let data;
+  try{ data = JSON.parse(raw); }catch(e){ await customAlert('Güvenlik kopyası bozulmuş görünüyor.', { title:'Hata' }); return; }
+  const ok = await customConfirm(`Son geri yükleme öncesindeki verilerine (${data.products.length} ürün) dönmek istiyor musun? Şu anki veriler değişecek.`, { title:'Güvenlik Kopyasına Dön', okText:'Geri Dön', danger:true });
+  if(!ok) return;
+  state = { products: data.products, suppliers: data.suppliers || [], movements: data.movements };
+  selectedProductId = null;
+  saveData();
+  render();
+  await customAlert('Güvenlik kopyasındaki verilere geri dönüldü.', { title:'Tamamlandı' });
+});
+
+async function sendBackupEmailNow(){
+  if(typeof window.electronAPI === 'undefined' || !window.electronAPI.sendEmail){
+    return { ok:false, error:'E-posta gönderimi yalnızca masaüstü uygulamasında çalışır.' };
+  }
+  const to = settings.backupMailTo || settings.mailTo || settings.smtpUser;
+  return await window.electronAPI.sendEmail({
+    smtp: { host: settings.smtpHost, port: settings.smtpPort, user: settings.smtpUser, pass: settings.smtpPass },
+    mail: {
+      to,
+      subject: `Stok Takip Yedek — ${todayStr()}`,
+      text: `Ekte ${state.products.length} ürün içeren yedek dosyan bulunuyor.`,
+      html: `<p>Ekte <b>${state.products.length}</b> ürün içeren yedek dosyan bulunuyor.</p>`,
+      attachment: { filename: backupFileName('stok-yedek'), content: buildBackupJSON() }
+    }
+  });
+}
+document.getElementById('testBackupMailBtn').addEventListener('click', async () => {
+  const resultEl = document.getElementById('backupResult');
+  const mailTo = document.getElementById('stBackupMailTo').value.trim();
+  const smtpHost = document.getElementById('stSmtpHost').value.trim();
+  const smtpUser = document.getElementById('stSmtpUser').value.trim();
+  const smtpPass = document.getElementById('stSmtpPass').value;
+  if(!smtpHost || !smtpUser || !smtpPass){
+    resultEl.style.color = 'var(--red)';
+    resultEl.textContent = 'Önce yukarıdaki e-posta bildirimi SMTP bilgilerini doldurup kaydet.';
+    return;
+  }
+  resultEl.style.color = 'var(--text-faint)';
+  resultEl.textContent = 'Gönderiliyor...';
+  settings.backupMailTo = mailTo;
+  const res = await sendBackupEmailNow();
+  if(res && res.ok){
+    resultEl.style.color = 'var(--green)';
+    resultEl.textContent = 'Yedek e-postana gönderildi.';
+    settings.lastBackupSentAt = Date.now();
+    saveSettings();
+  } else {
+    resultEl.style.color = 'var(--red)';
+    resultEl.textContent = 'Gönderilemedi: ' + (res && res.error ? res.error : 'bilinmeyen hata');
+  }
+});
+async function checkAutoBackup(force){
+  if(!settings.autoBackup) return;
+  if(!settings.smtpHost || !settings.smtpUser || !settings.smtpPass) return;
+  const intervalMs = (settings.backupIntervalDays || 7) * 86400000;
+  const last = settings.lastBackupSentAt || 0;
+  if(!force && (Date.now() - last) < intervalMs) return;
+  const res = await sendBackupEmailNow();
+  if(res && res.ok){
+    settings.lastBackupSentAt = Date.now();
+    saveSettings();
+  }
+}
+
+/* ---------- CSV DIŞA AKTARIM ---------- */
+function csvEscape(val){
+  const s = String(val === undefined || val === null ? '' : val);
+  if(/[";\n]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
+  return s;
+}
+function downloadCSV(filename, rows){
+  const csv = rows.map(r => r.map(csvEscape).join(';')).join('\r\n');
+  const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+function exportAllStockCSV(){
+  const header = ['Ürün','Barkod','Kategori','Birim','Stok','Alış Fiyatı','Satış Fiyatı','Stok Değeri','Tedarikçi'];
+  const rows = [header];
+  state.products.slice().sort((a,b) => a.name.localeCompare(b.name,'tr')).forEach(p => {
+    const stock = productStock(p.id);
+    rows.push([p.name, p.barcode||'', p.category||'', p.unit||'', fmtQty(stock), (p.purchasePrice||0).toFixed(2), (p.salePrice||0).toFixed(2), (stock*(p.purchasePrice||0)).toFixed(2), p.supplierId ? supplierName(p.supplierId) : '']);
+  });
+  downloadCSV(`stok-raporu-${todayStr()}.csv`, rows);
+}
+function exportProductCSV(productId){
+  const p = state.products.find(x => x.id === productId);
+  if(!p) return;
+  const movs = state.movements.filter(m => m.productId === productId).sort((a,b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
+  const header = ['Tarih','Tür','Miktar','Birim Fiyat','Tutar','Kalan Stok','Taraf','Not'];
+  const rows = [header];
+  let running = 0;
+  movs.forEach(m => {
+    running += (m.type === 'in' ? m.quantity : -m.quantity);
+    const taraf = m.type === 'in' ? (m.supplierId ? supplierName(m.supplierId) : '') : (m.destinationId ? destinationName(m.destinationId) : '');
+    rows.push([m.date, m.type === 'in' ? 'Giriş' : 'Çıkış', fmtQty(m.quantity), (m.unitPrice||0).toFixed(2), ((m.unitPrice||0)*m.quantity).toFixed(2), fmtQty(running), taraf, m.note||'']);
+  });
+  downloadCSV(`urun-${p.name.replace(/\s+/g,'-')}-${todayStr()}.csv`, rows);
+}
+document.getElementById('exportCsvBtn').addEventListener('click', exportAllStockCSV);
+document.getElementById('exportProdCsvBtn').addEventListener('click', () => {
+  if(!selectedProductId) return;
+  exportProductCSV(selectedProductId);
+});
+
+/* ---------- YAZDIRMA ---------- */
+function printNowStr(){
+  return new Date().toLocaleString('tr-TR');
+}
+async function renderPrintOutput(html, filename){
+  if(typeof window.electronAPI !== 'undefined' && window.electronAPI.printPreview){
+    const res = await window.electronAPI.printPreview({ html, filename });
+    if(!res.ok){
+      await customAlert('Önizleme oluşturulamadı: ' + (res.error || 'bilinmeyen hata'), { title:'Yazdırma Hatası' });
+    }
+    return;
+  }
+  document.getElementById('printArea').innerHTML = html;
+  window.print();
+}
+async function printAllStock(){
+  const btn = document.getElementById('printAllBtn');
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = '🖨 Hazırlanıyor...';
+  const rows = state.products.slice().sort((a,b) => a.name.localeCompare(b.name,'tr')).map(p => {
+    const stock = productStock(p.id);
+    return `<tr>
+      <td>${escapeHtml(p.name)}</td>
+      <td>${escapeHtml(p.category||'—')}</td>
+      <td class="num">${fmtQty(stock)} ${escapeHtml(p.unit||'')}</td>
+      <td class="num">${fmt(p.purchasePrice||0)}</td>
+      <td class="num">${fmt(p.salePrice||0)}</td>
+      <td class="num">${fmt(stock*(p.purchasePrice||0))}</td>
+    </tr>`;
+  }).join('');
+  const total = state.products.reduce((sum,p) => sum + (productStock(p.id) * (p.purchasePrice||0)), 0);
+  const html = `
+    <div class="print-title">Stok Takip Programı — Stok Raporu</div>
+    <div class="print-meta">Oluşturulma: ${printNowStr()} · ${state.products.length} ürün</div>
+    <table class="print-table">
+      <thead><tr><th>Ürün</th><th>Kategori</th><th class="num">Stok</th><th class="num">Alış</th><th class="num">Satış</th><th class="num">Stok Değeri</th></tr></thead>
+      <tbody>
+        ${rows || '<tr><td colspan="6">Kayıtlı ürün yok.</td></tr>'}
+        <tr class="print-total-row"><td colspan="5">Toplam Stok Değeri</td><td class="num">${fmt(total)}</td></tr>
+      </tbody>
+    </table>
+    <div class="print-footer">Stok Takip Programı ile oluşturulmuştur.</div>
+  `;
+  await renderPrintOutput(html, 'stok-raporu');
+  btn.disabled = false;
+  btn.textContent = originalLabel;
+}
+async function printProductDetail(productId){
+  const p = state.products.find(x => x.id === productId);
+  if(!p) return;
+  const btn = document.getElementById('printProdBtn');
+  btn.disabled = true;
+  const movs = state.movements.filter(m => m.productId === productId).sort((a,b) => a.date.localeCompare(b.date) || a.createdAt - b.createdAt);
+  let running = 0;
+  const rows = movs.map(m => {
+    running += (m.type === 'in' ? m.quantity : -m.quantity);
+    const taraf = m.type === 'in' ? (m.supplierId ? supplierName(m.supplierId) : '—') : (m.destinationId ? destinationName(m.destinationId) : '—');
+    return `<tr>
+      <td>${new Date(m.date+'T00:00:00').toLocaleDateString('tr-TR')}</td>
+      <td>${m.type === 'in' ? 'Giriş' : 'Çıkış'}</td>
+      <td class="num">${m.type === 'in' ? '+' : '−'}${fmtQty(m.quantity)} ${p.unit||''}</td>
+      <td class="num">${m.unitPrice ? fmt(m.unitPrice*m.quantity) : ''}</td>
+      <td class="num">${fmtQty(running)}</td>
+      <td>${escapeHtml(taraf)}</td>
+    </tr>`;
+  }).join('');
+  const stock = productStock(productId);
+  const html = `
+    <div class="print-title">${escapeHtml(p.name)}</div>
+    <div class="print-meta">${p.category ? escapeHtml(p.category)+' · ' : ''}${escapeHtml(p.unit||'')}${p.barcode ? ' · barkod: '+escapeHtml(p.barcode) : ''} · Oluşturulma: ${printNowStr()}</div>
+    <table class="print-table">
+      <thead><tr><th>Tarih</th><th>Tür</th><th class="num">Miktar</th><th class="num">Tutar</th><th class="num">Kalan Stok</th><th>Taraf</th></tr></thead>
+      <tbody>
+        ${rows || '<tr><td colspan="6">Henüz kayıt yok.</td></tr>'}
+        <tr class="print-total-row"><td colspan="4">Güncel Stok</td><td class="num">${fmtQty(stock)} ${escapeHtml(p.unit||'')}</td><td></td></tr>
+      </tbody>
+    </table>
+    <div class="print-footer">Stok Takip Programı ile oluşturulmuştur.</div>
+  `;
+  await renderPrintOutput(html, `urun-${p.name.replace(/\s+/g,'-')}`);
+  btn.disabled = false;
+}
+document.getElementById('printAllBtn').addEventListener('click', printAllStock);
+document.getElementById('printProdBtn').addEventListener('click', () => {
+  if(!selectedProductId) return;
+  printProductDetail(selectedProductId);
+});
+
+/* ---------- KİMLİK DOĞRULAMA (GİRİŞ / KAYIT) ---------- */
+const AUTH_KEY = 'stok-auth';
+let auth = null;
+let authMode = 'login';
+
+async function hashPass(pw){
+  try{
+    if(window.crypto && window.crypto.subtle){
+      const enc = new TextEncoder().encode(pw);
+      const buf = await window.crypto.subtle.digest('SHA-256', enc);
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+  }catch(e){}
+  let hash = 0;
+  for(let i=0;i<pw.length;i++){ hash = (hash<<5) - hash + pw.charCodeAt(i); hash |= 0; }
+  return 'fb_' + Math.abs(hash).toString(16);
+}
+function loadAuth(){
+  try{
+    const raw = localStorage.getItem(AUTH_KEY);
+    auth = raw ? JSON.parse(raw) : null;
+  }catch(e){ auth = null; }
+}
+function setFieldVisible(id, visible){
+  document.getElementById(id).style.display = visible ? 'flex' : 'none';
+}
+function setAuthMode(mode){
+  authMode = mode;
+  document.getElementById('authError').textContent = '';
+  document.getElementById('authUsername').value = (mode === 'login' || mode === 'reset') && auth ? (auth.username || '') : '';
+  document.getElementById('authPassword').value = '';
+  document.getElementById('authPasswordConfirm').value = '';
+  document.getElementById('authRecoveryCode').value = '';
+  document.getElementById('authRecoveryCodeConfirm').value = '';
+  document.getElementById('authResetRecoveryInput').value = '';
+  document.getElementById('authResetNewPass').value = '';
+  document.getElementById('authResetNewPassConfirm').value = '';
+
+  const toggleText = document.getElementById('authToggleText');
+  const forgotText = document.getElementById('authForgotText');
+
+  setFieldVisible('authPasswordField', mode === 'login' || mode === 'register');
+  setFieldVisible('authConfirmField', mode === 'register');
+  setFieldVisible('authRecoveryField', mode === 'register');
+  setFieldVisible('authRecoveryConfirmField', mode === 'register');
+  setFieldVisible('authResetRecoveryField', mode === 'reset');
+  setFieldVisible('authResetNewPassField', mode === 'reset');
+  setFieldVisible('authResetNewPassConfirmField', mode === 'reset');
+
+  if(mode === 'register'){
+    document.getElementById('authTitle').textContent = 'Hesap Oluştur';
+    document.getElementById('authSub').textContent = 'Stok takip programına erişmek için bir kullanıcı adı, şifre ve kurtarma kodu belirle.';
+    document.getElementById('authSubmitBtn').textContent = 'Hesap Oluştur';
+    toggleText.innerHTML = 'Zaten hesabın var mı? <a href="#" id="authToggleLink">Giriş yap</a>';
+    forgotText.innerHTML = '';
+  } else if(mode === 'reset'){
+    document.getElementById('authTitle').textContent = 'Şifreyi Sıfırla';
+    document.getElementById('authSub').textContent = 'Kayıt olurken belirlediğin kurtarma kodunu gir ve yeni bir şifre oluştur.';
+    document.getElementById('authSubmitBtn').textContent = 'Şifreyi Sıfırla';
+    toggleText.innerHTML = '';
+    forgotText.innerHTML = '<a href="#" id="authBackToLoginLink">← Giriş ekranına dön</a>';
+  } else {
+    document.getElementById('authTitle').textContent = 'Giriş Yap';
+    document.getElementById('authSub').textContent = 'Devam etmek için kullanıcı adı ve şifreni gir.';
+    document.getElementById('authSubmitBtn').textContent = 'Giriş Yap';
+    toggleText.innerHTML = 'Hesabın yok mu? <a href="#" id="authToggleLink">Hesap oluştur</a>';
+    forgotText.innerHTML = auth ? '<a href="#" id="authForgotLink">Şifremi unuttum</a>' : '';
+  }
+  const toggleLink = document.getElementById('authToggleLink');
+  if(toggleLink){
+    toggleLink.addEventListener('click', (e) => { e.preventDefault(); setAuthMode(mode === 'register' ? 'login' : 'register'); });
+  }
+  const forgotLink = document.getElementById('authForgotLink');
+  if(forgotLink){
+    forgotLink.addEventListener('click', (e) => { e.preventDefault(); setAuthMode('reset'); });
+  }
+  const backLink = document.getElementById('authBackToLoginLink');
+  if(backLink){
+    backLink.addEventListener('click', (e) => { e.preventDefault(); setAuthMode('login'); });
+  }
+  const focusId = (mode === 'login' && auth && auth.username) ? 'authPassword' : 'authUsername';
+  setTimeout(() => document.getElementById(focusId).focus(), 50);
+}
+
+document.getElementById('authForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById('authError');
+  errorEl.textContent = '';
+  const username = document.getElementById('authUsername').value.trim();
+
+  if(authMode === 'register'){
+    const password = document.getElementById('authPassword').value;
+    const confirmPw = document.getElementById('authPasswordConfirm').value;
+    const recovery = document.getElementById('authRecoveryCode').value.trim();
+    const recoveryConfirm = document.getElementById('authRecoveryCodeConfirm').value.trim();
+    if(!username || !password){ errorEl.textContent = 'Kullanıcı adı ve şifre gerekli.'; return; }
+    if(password.length < 4){ errorEl.textContent = 'Şifre en az 4 karakter olmalı.'; return; }
+    if(password !== confirmPw){ errorEl.textContent = 'Şifreler eşleşmiyor.'; return; }
+    if(!recovery || recovery.length < 3){ errorEl.textContent = 'Kurtarma kodu en az 3 karakter olmalı.'; return; }
+    if(recovery !== recoveryConfirm){ errorEl.textContent = 'Kurtarma kodları eşleşmiyor.'; return; }
+    const passHash = await hashPass(password);
+    const recoveryHash = await hashPass(recovery.toLowerCase());
+    auth = { username, passHash, recoveryHash };
+    localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+    enterApp();
+  } else if(authMode === 'reset'){
+    const recoveryInput = document.getElementById('authResetRecoveryInput').value.trim();
+    const newPass = document.getElementById('authResetNewPass').value;
+    const newPassConfirm = document.getElementById('authResetNewPassConfirm').value;
+    if(!auth){ errorEl.textContent = 'Kayıtlı hesap bulunamadı.'; return; }
+    if(username !== auth.username){ errorEl.textContent = 'Kullanıcı adı hatalı.'; return; }
+    if(!auth.recoveryHash){ errorEl.textContent = 'Bu hesap için kurtarma kodu tanımlı değil.'; return; }
+    const recoveryHash = await hashPass(recoveryInput.toLowerCase());
+    if(recoveryHash !== auth.recoveryHash){ errorEl.textContent = 'Kurtarma kodu hatalı.'; return; }
+    if(newPass.length < 4){ errorEl.textContent = 'Yeni şifre en az 4 karakter olmalı.'; return; }
+    if(newPass !== newPassConfirm){ errorEl.textContent = 'Yeni şifreler eşleşmiyor.'; return; }
+    auth.passHash = await hashPass(newPass);
+    localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+    enterApp();
+  } else {
+    const password = document.getElementById('authPassword').value;
+    if(!username || !password){ errorEl.textContent = 'Kullanıcı adı ve şifre gerekli.'; return; }
+    if(!auth){ errorEl.textContent = 'Kayıtlı hesap bulunamadı.'; return; }
+    const passHash = await hashPass(password);
+    if(username !== auth.username || passHash !== auth.passHash){ errorEl.textContent = 'Kullanıcı adı veya şifre hatalı.'; return; }
+    enterApp();
+  }
+});
+
+document.getElementById('tbLogout').addEventListener('click', async () => {
+  const ok = await customConfirm('Çıkış yapmak istiyor musun?', { title:'Çıkış Yap' });
+  if(!ok) return;
+  selectedProductId = null;
+  document.getElementById('settingsOverlay').classList.remove('show');
+  document.getElementById('modalOverlay').classList.remove('show');
+  document.getElementById('editProdOverlay').classList.remove('show');
+  showAuthScreen();
+});
+function showAuthScreen(){
+  loadAuth();
+  document.getElementById('authOverlay').classList.add('show');
+  setAuthMode(auth ? 'login' : 'register');
+}
+function enterApp(){
+  document.getElementById('authOverlay').classList.remove('show');
+  document.getElementById('welcomeUser').textContent = auth ? auth.username : '';
+  loadData();
+  setTimeout(() => checkCriticalStock(false), 3000);
+  setTimeout(() => checkAutoBackup(false), 5000);
+}
+function initAuth(){
+  loadAuth();
+  showAuthScreen();
+}
+
+document.getElementById('acctSave').addEventListener('click', async () => {
+  const resultEl = document.getElementById('acctResult');
+  resultEl.style.color = 'var(--red)';
+  const newUsername = document.getElementById('acctUsername').value.trim();
+  const currentPass = document.getElementById('acctCurrentPass').value;
+  const newPass = document.getElementById('acctNewPass').value;
+  const newPassConfirm = document.getElementById('acctNewPassConfirm').value;
+  const newRecovery = document.getElementById('acctNewRecovery').value.trim();
+  const newRecoveryConfirm = document.getElementById('acctNewRecoveryConfirm').value.trim();
+
+  if(!newUsername){ resultEl.textContent = 'Kullanıcı adı boş olamaz.'; return; }
+  const wantsPasswordChange = !!(newPass || newPassConfirm);
+  const wantsRecoveryChange = !!(newRecovery || newRecoveryConfirm);
+  const wantsUsernameChange = newUsername !== auth.username;
+
+  if(!wantsPasswordChange && !wantsRecoveryChange && !wantsUsernameChange){
+    resultEl.style.color = 'var(--text-faint)';
+    resultEl.textContent = 'Değişecek bir şey yok.';
+    return;
+  }
+  if(!currentPass){ resultEl.textContent = 'Değişiklik için mevcut şifreni girmelisin.'; return; }
+  const curHash = await hashPass(currentPass);
+  if(curHash !== auth.passHash){ resultEl.textContent = 'Mevcut şifre yanlış.'; return; }
+
+  if(wantsPasswordChange){
+    if(newPass.length < 4){ resultEl.textContent = 'Yeni şifre en az 4 karakter olmalı.'; return; }
+    if(newPass !== newPassConfirm){ resultEl.textContent = 'Yeni şifreler eşleşmiyor.'; return; }
+    auth.passHash = await hashPass(newPass);
+  }
+  if(wantsRecoveryChange){
+    if(newRecovery.length < 3){ resultEl.textContent = 'Kurtarma kodu en az 3 karakter olmalı.'; return; }
+    if(newRecovery !== newRecoveryConfirm){ resultEl.textContent = 'Kurtarma kodları eşleşmiyor.'; return; }
+    auth.recoveryHash = await hashPass(newRecovery.toLowerCase());
+  }
+  auth.username = newUsername;
+  localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
+  document.getElementById('welcomeUser').textContent = auth.username;
+  document.getElementById('acctCurrentPass').value = '';
+  document.getElementById('acctNewPass').value = '';
+  document.getElementById('acctNewPassConfirm').value = '';
+  document.getElementById('acctNewRecovery').value = '';
+  document.getElementById('acctNewRecoveryConfirm').value = '';
+  resultEl.style.color = 'var(--green)';
+  resultEl.textContent = 'Hesap bilgilerin güncellendi.';
+});
+
+/* ---------- LİSANSLAMA ---------- */
+// NOT: Bu anahtar, lisans anahtarlarını üreten script ile (lisans-uret.js) birebir aynı olmalı.
+const LICENSE_SECRET = 'STOK-TAKIP-2026-GIZLI-ANAHTAR-DEGISTIR';
+const LICENSE_STORAGE_KEY = 'stok-license';
+const TRIAL_START_KEY = 'stok-trial-start';
+const CLOCK_WATERMARK_KEY = 'stok-clock-watermark';
+const TRIAL_DAYS = 365;
+
+// Bilgisayarın saati geri alınarak deneme/lisans süresinin sıfırlanmasını
+// engeller: uygulama şimdiye kadar gördüğü EN İLERİ tarihi hatırlar ve
+// hesaplamalarda hep bunu kullanır — saat geri sarılsa bile bu "su işareti"
+// asla geri gitmez.
+function trustedNow(){
+  let watermark = 0;
+  try{
+    watermark = parseInt(localStorage.getItem(CLOCK_WATERMARK_KEY) || '0', 10) || 0;
+  }catch(e){}
+  const now = Date.now();
+  const effective = Math.max(now, watermark);
+  try{ localStorage.setItem(CLOCK_WATERMARK_KEY, String(effective)); }catch(e){}
+  return effective;
+}
+
+async function sha256Hex(str){
+  try{
+    if(window.crypto && window.crypto.subtle){
+      const enc = new TextEncoder().encode(str);
+      const buf = await window.crypto.subtle.digest('SHA-256', enc);
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2,'0')).join('');
+    }
+  }catch(e){}
+  let hash = 0;
+  for(let i=0;i<str.length;i++){ hash = (hash<<5) - hash + str.charCodeAt(i); hash |= 0; }
+  return 'fb' + Math.abs(hash).toString(16).padStart(8,'0');
+}
+
+async function validateLicenseKey(rawKey){
+  if(!rawKey) return { valid:false, error:'Anahtar boş olamaz.' };
+  const key = rawKey.trim().toUpperCase();
+  const parts = key.split('-');
+  if(parts.length !== 3 || parts[0] !== 'STOK'){
+    return { valid:false, error:'Geçersiz anahtar biçimi.' };
+  }
+  const tsPart = parts[1];
+  const checksumPart = parts[2];
+  const expiryMs = parseInt(tsPart, 36);
+  if(!expiryMs || isNaN(expiryMs)){
+    return { valid:false, error:'Anahtar biçimi hatalı.' };
+  }
+  const hash = await sha256Hex(`${tsPart}:${LICENSE_SECRET}`);
+  const expectedChecksum = hash.slice(0, 8).toUpperCase();
+  if(checksumPart !== expectedChecksum){
+    return { valid:false, error:'Anahtar doğrulanamadı (hatalı ya da sahte).' };
+  }
+  if(trustedNow() > expiryMs){
+    return { valid:false, error:'Bu lisans anahtarının süresi dolmuş.', expired:true, expiryMs };
+  }
+  return { valid:true, expiryMs };
+}
+
+function formatLicenseDate(ms){
+  return new Date(ms).toLocaleDateString('tr-TR');
+}
+
+let licenseState = { mode:'trial', daysLeft:TRIAL_DAYS, expiryMs:null };
+
+async function evaluateLicense(){
+  const now = trustedNow();
+  const storedKey = localStorage.getItem(LICENSE_STORAGE_KEY);
+  if(storedKey){
+    const res = await validateLicenseKey(storedKey);
+    if(res.valid){
+      licenseState = { mode:'licensed', daysLeft:null, expiryMs:res.expiryMs };
+      return licenseState;
+    }
+    if(res.expired){
+      licenseState = { mode:'license_expired', daysLeft:0, expiryMs:res.expiryMs };
+      return licenseState;
+    }
+  }
+  let trialStart = localStorage.getItem(TRIAL_START_KEY);
+  if(!trialStart){
+    trialStart = now;
+    localStorage.setItem(TRIAL_START_KEY, String(trialStart));
+  } else {
+    trialStart = parseInt(trialStart);
+  }
+  const elapsedDays = Math.floor((now - trialStart) / 86400000);
+  const daysLeft = TRIAL_DAYS - elapsedDays;
+  if(daysLeft > 0){
+    licenseState = { mode:'trial', daysLeft, expiryMs:null };
+  } else {
+    licenseState = { mode:'trial_expired', daysLeft:0, expiryMs:null };
+  }
+  return licenseState;
+}
+
+function licenseStatusLabel(){
+  if(licenseState.mode === 'licensed'){
+    return `Lisanslı — ${formatLicenseDate(licenseState.expiryMs)} tarihine kadar geçerli.`;
+  }
+  return '';
+}
+
+async function enforceLicenseGate(){
+  await evaluateLicense();
+  if(licenseState.mode === 'licensed' || licenseState.mode === 'trial'){
+    document.getElementById('licenseOverlay').classList.remove('show');
+    return true;
+  }
+  document.getElementById('licenseBadge').textContent = licenseState.mode === 'license_expired' ? 'LİSANS SÜRESİ DOLDU' : 'DENEME SÜRESİ DOLDU';
+  document.getElementById('licenseSub').textContent = licenseState.mode === 'license_expired'
+    ? 'Lisans anahtarının süresi doldu. Devam etmek için yeni bir yıllık anahtar gir.'
+    : '1 yıllık kullanım süren sona erdi. Devam etmek için yıllık lisans anahtarını gir.';
+  document.getElementById('licenseKeyInput').value = '';
+  document.getElementById('licenseError').textContent = '';
+  document.getElementById('licenseSuccess').textContent = '';
+  document.getElementById('licenseOverlay').classList.add('show');
+  return false;
+}
+
+document.getElementById('licenseForm').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const errorEl = document.getElementById('licenseError');
+  const successEl = document.getElementById('licenseSuccess');
+  errorEl.textContent = '';
+  successEl.textContent = '';
+  const key = document.getElementById('licenseKeyInput').value.trim();
+  const res = await validateLicenseKey(key);
+  if(!res.valid){
+    errorEl.textContent = res.error || 'Anahtar geçersiz.';
+    return;
+  }
+  localStorage.setItem(LICENSE_STORAGE_KEY, key.toUpperCase());
+  successEl.textContent = `Etkinleştirildi — ${formatLicenseDate(res.expiryMs)} tarihine kadar geçerli.`;
+  licenseState = { mode:'licensed', daysLeft:null, expiryMs:res.expiryMs };
+  setTimeout(() => {
+    document.getElementById('licenseOverlay').classList.remove('show');
+    initAuth();
+  }, 900);
+});
+
+document.getElementById('whatsappBtn').addEventListener('click', async () => {
+  const phone = '905557977799';
+  const message = encodeURIComponent('Merhaba, Stok Takip Programı için lisans almak istiyorum.');
+  const url = `https://wa.me/${phone}?text=${message}`;
+  if(typeof window.electronAPI !== 'undefined' && window.electronAPI.openExternal){
+    await window.electronAPI.openExternal(url);
+  } else {
+    window.open(url, '_blank');
+  }
+});
+
+document.getElementById('settingsLicenseSave').addEventListener('click', async () => {
+  const resultEl = document.getElementById('settingsLicenseResult');
+  const key = document.getElementById('stLicenseKey').value.trim();
+  if(!key){
+    resultEl.style.color = 'var(--red)';
+    resultEl.textContent = 'Bir anahtar girmelisin.';
+    return;
+  }
+  const res = await validateLicenseKey(key);
+  if(!res.valid){
+    resultEl.style.color = 'var(--red)';
+    resultEl.textContent = res.error || 'Anahtar geçersiz.';
+    return;
+  }
+  localStorage.setItem(LICENSE_STORAGE_KEY, key.toUpperCase());
+  licenseState = { mode:'licensed', daysLeft:null, expiryMs:res.expiryMs };
+  resultEl.style.color = 'var(--green)';
+  resultEl.textContent = `Etkinleştirildi — ${formatLicenseDate(res.expiryMs)} tarihine kadar geçerli.`;
+  document.getElementById('settingsLicenseStatus').textContent = licenseStatusLabel();
+});
+
+/* ---------- BAŞLANGIÇ ---------- */
+loadSettings();
+applyTheme(settings.theme);
+if(settings.desktopNotif) requestDesktopPermission();
+setInterval(() => checkCriticalStock(false), 60 * 60 * 1000);
+setInterval(() => checkAutoBackup(false), 60 * 60 * 1000);
+setInterval(() => enforceLicenseGate(), 60 * 60 * 1000);
+
+(async function startApp(){
+  const ok = await enforceLicenseGate();
+  if(ok) initAuth();
+})();
+</script>
+</body>
+</html>
