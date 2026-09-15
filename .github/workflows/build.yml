@@ -1,0 +1,43 @@
+name: Stok Takip Programı EXE Derle
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: {}
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Kodu al
+        uses: actions/checkout@v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Bağımlılıkları kur
+        run: npm install
+
+      - name: Basit yöntem - portable exe klasörü oluştur (electron-packager)
+        run: npm run package
+        continue-on-error: true
+
+      - name: Portable klasörü yükle (indirilebilir yap)
+        uses: actions/upload-artifact@v4
+        with:
+          name: stok-takip-windows-portable
+          path: dist-packager/**
+          if-no-files-found: ignore
+
+      - name: Kurulum dosyası oluştur (electron-builder)
+        run: npm run build
+        continue-on-error: true
+
+      - name: Kurulum .exe'sini yükle (indirilebilir yap)
+        uses: actions/upload-artifact@v4
+        with:
+          name: stok-takip-windows-installer
+          path: dist/*.exe
+          if-no-files-found: ignore
